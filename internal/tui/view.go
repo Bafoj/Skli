@@ -48,6 +48,10 @@ var (
 			Foreground(lipgloss.Color("#00FF00")).
 			Bold(true).
 			MarginTop(1)
+
+	dimStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+
+	infoStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
 )
 
 func (m Model) View() string {
@@ -68,6 +72,35 @@ func (m Model) View() string {
 
 	case StateScanning:
 		s.WriteString(fmt.Sprintf("%s Escaneando el repositorio remoto...", m.Spinner.View()))
+
+	case StateConfigMenu:
+		s.WriteString("Configuración Global:\n\n")
+
+		// Opción 1: Local Path
+		cursor := "  "
+		if m.ConfigCursor == 0 {
+			cursor = "➜ "
+		}
+		line := "Local Path: " + infoStyle.Render(m.ConfigLocalPath)
+		if m.ConfigCursor == 0 {
+			s.WriteString(selectedItemStyle.Render(cursor+line) + "\n")
+		} else {
+			s.WriteString(itemStyle.Render(cursor+line) + "\n")
+		}
+
+		// Opción 2: Confirmar
+		cursor = "  "
+		if m.ConfigCursor == 1 {
+			cursor = "➜ "
+		}
+		line = "Confirmar y Guardar"
+		if m.ConfigCursor == 1 {
+			s.WriteString(selectedItemStyle.Render(cursor+line) + "\n")
+		} else {
+			s.WriteString(itemStyle.Render(cursor+line) + "\n")
+		}
+
+		s.WriteString(helpStyle.Render("\n↑/↓: navegar • enter: seleccionar • q: salir"))
 
 	case StateSelectingSkills:
 		s.WriteString(fmt.Sprintf("Encontrados %d skills. Selecciona los que quieres instalar:\n\n", len(m.Skills)))
@@ -127,11 +160,36 @@ func (m Model) View() string {
 
 		s.WriteString(helpStyle.Render("\n↑/↓: navegar • espacio: marcar • enter: instalar • q: salir"))
 
+	case StateSelectingEditor:
+		s.WriteString("Selecciona tu editor:\n\n")
+		for i, editor := range Editors {
+			cursor := "  "
+			if m.EditorCursor == i {
+				cursor = "➜ "
+			}
+
+			line := editor.Name
+			if editor.Path != "" {
+				line = fmt.Sprintf("%-12s %s", editor.Name, dimStyle.Render("("+editor.Path+")"))
+			}
+
+			if m.EditorCursor == i {
+				s.WriteString(selectedItemStyle.Render(cursor+line) + "\n")
+			} else {
+				s.WriteString(itemStyle.Render(cursor+line) + "\n")
+			}
+		}
+		s.WriteString(helpStyle.Render("\n↑/↓: navegar • enter: seleccionar • esc: volver • q: salir"))
+
 	case StateDownloading:
-		s.WriteString(fmt.Sprintf("%s Instalando skills seleccionadas...", m.Spinner.View()))
+		s.WriteString(fmt.Sprintf("%s Instalando skills seleccionadas en %s...", m.Spinner.View(), infoStyle.Render(m.ConfigLocalPath)))
 
 	case StateDone:
-		s.WriteString(successStyle.Render("✔ ¡Skills instaladas correctamente en ./skills/!"))
+		if m.ConfigMode {
+			s.WriteString(successStyle.Render("✔ ¡Configuración guardada correctamente!"))
+		} else {
+			s.WriteString(successStyle.Render(fmt.Sprintf("✔ ¡Skills instaladas correctamente en ./%s/!", m.ConfigLocalPath)))
+		}
 		s.WriteString(helpStyle.Render("\nPresiona cualquier tecla para salir"))
 
 	case StateError:

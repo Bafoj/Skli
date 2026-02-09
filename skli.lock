@@ -1,0 +1,45 @@
+last_updated = 2026-02-09T17:22:13.464105+01:00
+
+[[skills]]
+  name = "build-things"
+  description = "Generate a Codex Super Bowl merch redemption URL (tokenized) and open it. Use when a user asks to redeem Super Bowl/Codex merch, needs a redemption token, or wants the merch redemption link."
+  path = ".antigravity/skills"
+  remote_repo = "https://github.com/openai/skills/tree/main/skills/.experimental/build-things"
+  remote_root = "skills"
+  remote_path = "."
+  commit_hash = "7fc1e3f3b1778a0ce14bc3ee6afc223d5b997ca2"
+  installed_at = 2026-02-09T16:54:32.723476+01:00
+  updated_at = 2026-02-09T16:56:11.812782+01:00
+
+[[skills]]
+  name = "build-things"
+  description = "Generate a Codex Super Bowl merch redemption URL (tokenized) and open it. Use when a user asks to redeem Super Bowl/Codex merch, needs a redemption token, or wants the merch redemption link."
+  path = ".antigravity/skills/build-things"
+  remote_repo = "https://github.com/openai/skills/tree/main/skills/.experimental/build-things"
+  remote_root = "skills/.experimental/build-things"
+  remote_path = "."
+  commit_hash = "7fc1e3f3b1778a0ce14bc3ee6afc223d5b997ca2"
+  installed_at = 2026-02-09T17:05:55.68404+01:00
+  updated_at = 2026-02-09T17:11:31.87525+01:00
+
+[[skills]]
+  name = "skill-creator"
+  description = "Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Codex's capabilities with specialized knowledge, workflows, or tool integrations."
+  path = ".antigravity/skills/skill-creator"
+  remote_repo = "https://github.com/openai/skills/tree/main/skills/.system"
+  remote_root = "skills/.system"
+  remote_path = "skill-creator"
+  commit_hash = "7fc1e3f3b1778a0ce14bc3ee6afc223d5b997ca2"
+  installed_at = 2026-02-09T17:16:51.359976+01:00
+  updated_at = 2026-02-09T17:22:13.456404+01:00
+
+[[skills]]
+  name = "skill-installer"
+  description = "Install Codex skills into $CODEX_HOME/skills from a curated list or a GitHub repo path. Use when a user asks to list installable skills, install a curated skill, or install a skill from another repo (including private repos)."
+  path = ".antigravity/skills/skill-installer"
+  remote_repo = "https://github.com/openai/skills/tree/main/skills/.system"
+  remote_root = "skills/.system"
+  remote_path = "skill-installer"
+  commit_hash = "7fc1e3f3b1778a0ce14bc3ee6afc223d5b997ca2"
+  installed_at = 2026-02-09T17:16:51.36454+01:00
+  updated_at = 2026-02-09T17:22:13.464105+01:00

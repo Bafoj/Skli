@@ -1,124 +1,97 @@
 package db
 
 import (
-	"database/sql"
 	"os"
-	"path/filepath"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/BurntSushi/toml"
 )
 
 // InstalledSkill representa un skill instalado con su origen
 type InstalledSkill struct {
-	ID          int
-	Name        string
-	Description string
-	Path        string // Ruta local relativa (ej: "cloudflare-deploy")
-	RemoteRepo  string // URL del repo de origen
-	RemotePath  string // Ruta dentro del repo (ej: ".curated/cloudflare-deploy")
-	InstalledAt time.Time
-	UpdatedAt   time.Time
+	Name        string    `toml:"name"`
+	Description string    `toml:"description"`
+	Path        string    `toml:"path"`        // Ruta local relativa (ej: "cloudflare-deploy")
+	RemoteRepo  string    `toml:"remote_repo"` // URL del repo de origen
+	RemoteRoot  string    `toml:"remote_root"` // Directorio base dentro del repo (ej: "skills")
+	RemotePath  string    `toml:"remote_path"` // Ruta relativa al RemoteRoot (ej: ".curated/cloudflare-deploy")
+	CommitHash  string    `toml:"commit_hash"` // Hash del commit cuando se instaló
+	InstalledAt time.Time `toml:"installed_at"`
+	UpdatedAt   time.Time `toml:"updated_at"`
 }
 
-var dbPath string
-
-func init() {
-	home, _ := os.UserHomeDir()
-	dbPath = filepath.Join(home, ".skli", "skills.db")
+// LockFile representa la estructura del archivo skli.lock
+type LockFile struct {
+	LastUpdated time.Time        `toml:"last_updated"`
+	Skills      []InstalledSkill `toml:"skills"`
 }
 
-// InitDB inicializa la base de datos y crea las tablas si no existen
-func InitDB() (*sql.DB, error) {
-	// Crear directorio si no existe
-	dir := filepath.Dir(dbPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+const lockFileName = "skli.lock"
+
+// LoadLockFile carga el archivo skli.lock
+func LoadLockFile() (*LockFile, error) {
+	if _, err := os.Stat(lockFileName); os.IsNotExist(err) {
+		return &LockFile{Skills: []InstalledSkill{}}, nil
+	}
+
+	var lock LockFile
+	if _, err := toml.DecodeFile(lockFileName, &lock); err != nil {
 		return nil, err
 	}
 
-	db, err := sql.Open("sqlite3", dbPath)
+	return &lock, nil
+}
+
+// SaveLockFile guarda el archivo skli.lock
+func SaveLockFile(lock *LockFile) error {
+	lock.LastUpdated = time.Now()
+	f, err := os.Create(lockFileName)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	defer f.Close()
 
-	// Crear tabla de skills instalados
-	schema := `
-	CREATE TABLE IF NOT EXISTS installed_skills (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL,
-		description TEXT,
-		path TEXT NOT NULL UNIQUE,
-		remote_repo TEXT NOT NULL,
-		remote_path TEXT NOT NULL,
-		installed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-	);
-	CREATE INDEX IF NOT EXISTS idx_remote_repo ON installed_skills(remote_repo);
-	`
-
-	if _, err := db.Exec(schema); err != nil {
-		db.Close()
-		return nil, err
-	}
-
-	return db, nil
+	return toml.NewEncoder(f).Encode(lock)
 }
 
-// SaveInstalledSkill guarda o actualiza un skill instalado
-func SaveInstalledSkill(db *sql.DB, skill InstalledSkill) error {
-	query := `
-	INSERT INTO installed_skills (name, description, path, remote_repo, remote_path)
-	VALUES (?, ?, ?, ?, ?)
-	ON CONFLICT(path) DO UPDATE SET
-		name = excluded.name,
-		description = excluded.description,
-		remote_repo = excluded.remote_repo,
-		remote_path = excluded.remote_path,
-		updated_at = CURRENT_TIMESTAMP
-	`
-	_, err := db.Exec(query, skill.Name, skill.Description, skill.Path, skill.RemoteRepo, skill.RemotePath)
-	return err
-}
-
-// GetAllSkills obtiene todos los skills instalados
-func GetAllSkills(db *sql.DB) ([]InstalledSkill, error) {
-	rows, err := db.Query(`
-		SELECT id, name, description, path, remote_repo, remote_path, installed_at, updated_at
-		FROM installed_skills
-		ORDER BY name
-	`)
+// SaveInstalledSkill guarda o actualiza un skill instalado en el lock file
+func SaveInstalledSkill(skill InstalledSkill) error {
+	lock, err := LoadLockFile()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	defer rows.Close()
 
-	var skills []InstalledSkill
-	for rows.Next() {
-		var s InstalledSkill
-		if err := rows.Scan(&s.ID, &s.Name, &s.Description, &s.Path, &s.RemoteRepo, &s.RemotePath, &s.InstalledAt, &s.UpdatedAt); err != nil {
-			return nil, err
+	// Buscar si ya existe para actualizarlo
+	found := false
+	for i, s := range lock.Skills {
+		if s.Path == skill.Path {
+			skill.InstalledAt = s.InstalledAt
+			skill.UpdatedAt = time.Now()
+			lock.Skills[i] = skill
+			found = true
+			break
 		}
-		skills = append(skills, s)
 	}
-	return skills, nil
+
+	if !found {
+		skill.InstalledAt = time.Now()
+		skill.UpdatedAt = time.Now()
+		lock.Skills = append(lock.Skills, skill)
+	}
+
+	return SaveLockFile(lock)
 }
 
 // GetSkillsByRepo agrupa los skills por repo de origen
-func GetSkillsByRepo(db *sql.DB) (map[string][]InstalledSkill, error) {
-	skills, err := GetAllSkills(db)
+func GetSkillsByRepo() (map[string][]InstalledSkill, error) {
+	lock, err := LoadLockFile()
 	if err != nil {
 		return nil, err
 	}
 
 	grouped := make(map[string][]InstalledSkill)
-	for _, s := range skills {
+	for _, s := range lock.Skills {
 		grouped[s.RemoteRepo] = append(grouped[s.RemoteRepo], s)
 	}
 	return grouped, nil
-}
-
-// DeleteSkillByPath elimina un skill por su ruta local
-func DeleteSkillByPath(db *sql.DB, path string) error {
-	_, err := db.Exec("DELETE FROM installed_skills WHERE path = ?", path)
-	return err
 }

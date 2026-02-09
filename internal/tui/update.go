@@ -3,6 +3,7 @@ package tui
 import (
 	"os"
 	"path/filepath"
+	"skli/internal/config"
 	"skli/internal/db"
 	"skli/internal/gitrepo"
 
@@ -12,8 +13,7 @@ import (
 
 // Mensajes personalizados para operaciones asíncronas
 type scanMsg struct {
-	skills    []gitrepo.SkillInfo
-	tempDir   string
+	result    gitrepo.ScanResult
 	remoteURL string
 	err       error
 }
@@ -49,13 +49,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ErrorMessage = msg.err.Error()
 			return m, nil
 		}
+		res := msg.result
 		m.State = StateSelectingSkills
-		m.Skills = make([]Skill, len(msg.skills))
-		for i, info := range msg.skills {
+		m.Skills = make([]Skill, len(res.Skills))
+		for i, info := range res.Skills {
 			m.Skills[i] = Skill{Info: info}
 		}
-		m.TempDir = msg.tempDir
+		m.TempDir = res.TempDir
 		m.RemoteURL = msg.remoteURL
+		m.SkillsRoot = res.SkillsPath
+		m.CommitHash = res.CommitHash
 		return m, nil
 
 	case downloadMsg:
@@ -83,7 +86,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 				m.State = StateScanning
-				return m, tea.Batch(scanRepoCmd(url), m.Spinner.Tick)
+				return m, tea.Batch(scanRepoCmd(url, m.SkillsRoot), m.Spinner.Tick)
 			}
 		}
 		m.TextInput, cmd = m.TextInput.Update(msg)
@@ -111,9 +114,90 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 				if len(selected) > 0 {
+					if m.ConfigLocalPath == "" {
+						m.State = StateSelectingEditor
+						return m, nil
+					}
 					m.State = StateDownloading
-					return m, tea.Batch(downloadSkillsCmd(m.TempDir, m.RemoteURL, selected), m.Spinner.Tick)
+					return m, tea.Batch(downloadSkillsCmd(m.TempDir, m.RemoteURL, m.SkillsRoot, m.ConfigLocalPath, m.CommitHash, selected), m.Spinner.Tick)
 				}
+			}
+		}
+
+	case StateConfigMenu:
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "up", "k":
+				if m.ConfigCursor > 0 {
+					m.ConfigCursor--
+				}
+			case "down", "j":
+				if m.ConfigCursor < 1 { // 0: Local Path, 1: Confirm
+					m.ConfigCursor++
+				}
+			case "enter":
+				if m.ConfigCursor == 0 {
+					m.State = StateSelectingEditor
+				} else if m.ConfigCursor == 1 {
+					// Guardar definitivamente al confirmar
+					_ = config.SaveConfig(config.Config{LocalPath: m.ConfigLocalPath})
+					m.State = StateDone
+				}
+				return m, nil
+			case "q", "esc":
+				m.Quitting = true
+				return m, tea.Quit
+			}
+		}
+
+	case StateSelectingEditor:
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "esc", "backspace":
+				m.State = StateConfigMenu
+				return m, nil
+			case "up", "k":
+				if m.EditorCursor > 0 {
+					m.EditorCursor--
+				}
+			case "down", "j":
+				if m.EditorCursor < len(Editors)-1 {
+					m.EditorCursor++
+				}
+			case "enter":
+				editor := Editors[m.EditorCursor]
+				destPath := editor.Path
+				if editor.Name == "Custom" {
+					destPath = "skills"
+				}
+
+				m.ConfigLocalPath = destPath
+
+				// En modo config, no guardamos todavía, volvemos al menú para confirmar
+				if m.ConfigMode {
+					m.State = StateConfigMenu
+					return m, nil
+				}
+
+				// Si estamos en medio de una instalación, sí guardamos y procedemos
+				m.State = StateDownloading
+
+				// Guardar como configuración predeterminada para el futuro
+				_ = config.SaveConfig(config.Config{LocalPath: destPath})
+
+				var selected []gitrepo.SkillInfo
+				for _, s := range m.Skills {
+					if s.Selected {
+						selected = append(selected, s.Info)
+					}
+				}
+
+				return m, tea.Batch(
+					downloadSkillsCmd(m.TempDir, m.RemoteURL, m.SkillsRoot, m.ConfigLocalPath, m.CommitHash, selected),
+					m.Spinner.Tick,
+				)
 			}
 		}
 
@@ -134,36 +218,36 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // Comandos de Bubble Tea
-func scanRepoCmd(url string) tea.Cmd {
+func scanRepoCmd(url, defaultSkillsPath string) tea.Cmd {
 	return func() tea.Msg {
-		skills, tempDir, err := gitrepo.CloneAndScan(url)
-		return scanMsg{skills: skills, tempDir: tempDir, remoteURL: url, err: err}
+		res, err := gitrepo.CloneAndScan(url, defaultSkillsPath)
+		return scanMsg{result: res, remoteURL: url, err: err}
 	}
 }
 
-func downloadSkillsCmd(tempDir, remoteURL string, selected []gitrepo.SkillInfo) tea.Cmd {
+func downloadSkillsCmd(tempDir, remoteURL, skillsPath, localPath, commitHash string, selected []gitrepo.SkillInfo) tea.Cmd {
 	return func() tea.Msg {
-		err := gitrepo.InstallSkills(tempDir, selected)
+		err := gitrepo.InstallSkills(tempDir, skillsPath, localPath, selected)
 		if err != nil {
 			os.RemoveAll(tempDir)
 			return downloadMsg{err: err}
 		}
 
-		// Guardar en la base de datos
-		database, dbErr := db.InitDB()
-		if dbErr == nil {
-			defer database.Close()
-			for _, skill := range selected {
-				localPath := filepath.Base(skill.Path)
-				instSkill := db.InstalledSkill{
-					Name:        skill.Name,
-					Description: skill.Description,
-					Path:        localPath,
-					RemoteRepo:  remoteURL,
-					RemotePath:  skill.Path,
-				}
-				db.SaveInstalledSkill(database, instSkill)
+		// Guardar en el lock file (TOML) con el hash del commit
+		for _, skill := range selected {
+			// Usamos el nombre consistente (plano) para la ruta local
+			folderName := gitrepo.GetSkillFolderName(skill)
+			localSkillPath := filepath.Join(localPath, folderName)
+			instSkill := db.InstalledSkill{
+				Name:        skill.Name,
+				Description: skill.Description,
+				Path:        localSkillPath,
+				RemoteRepo:  remoteURL,
+				RemoteRoot:  skillsPath,
+				RemotePath:  skill.Path,
+				CommitHash:  commitHash,
 			}
+			db.SaveInstalledSkill(instSkill)
 		}
 
 		os.RemoveAll(tempDir)
