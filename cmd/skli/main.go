@@ -52,7 +52,7 @@ func main() {
 	}
 
 	// Modo interactivo normal
-	p := tea.NewProgram(tui.InitialModel(initialURL, *pathFlag, cfg.LocalPath, false), tea.WithAltScreen())
+	p := tea.NewProgram(tui.InitialModel(initialURL, *pathFlag, cfg.LocalPath, false, cfg.Remotes), tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Ocurrió un error: %v", err)
@@ -105,7 +105,7 @@ func runSync() {
 }
 
 func runConfig(cfg config.Config) {
-	p := tea.NewProgram(tui.InitialModel("", "skills", cfg.LocalPath, true), tea.WithAltScreen())
+	p := tea.NewProgram(tui.InitialModel("", "skills", cfg.LocalPath, true, cfg.Remotes), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Ocurrió un error en la configuración: %v", err)
 		os.Exit(1)

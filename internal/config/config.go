@@ -9,7 +9,8 @@ import (
 )
 
 type Config struct {
-	LocalPath string `toml:"local_path"`
+	LocalPath string   `toml:"local_path"`
+	Remotes   []string `toml:"remotes"`
 }
 
 func GetConfigDir() string {

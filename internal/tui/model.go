@@ -12,6 +12,9 @@ type State int
 
 const (
 	StateInputRemote State = iota
+	StateInputNewRemote
+	StateSelectingRemote
+	StateManageRemotes
 	StateScanning
 	StateSelectingSkills
 	StateSelectingEditor
@@ -60,10 +63,12 @@ type Model struct {
 	WindowHeight    int
 	Quitting        bool
 	ConfigMode      bool
+	Remotes         []string
+	RemoteCursor    int
 }
 
 // InitialModel inicializa el estado por defecto
-func InitialModel(initialURL, skillsRoot, configLocalPath string, configMode bool) Model {
+func InitialModel(initialURL, skillsRoot, configLocalPath string, configMode bool, remotes []string) Model {
 	ti := textinput.New()
 	ti.Placeholder = "https://github.com/usuario/repo.git"
 	ti.Focus()
@@ -83,6 +88,8 @@ func InitialModel(initialURL, skillsRoot, configLocalPath string, configMode boo
 		state = StateConfigMenu
 	} else if initialURL != "" {
 		state = StateScanning
+	} else if len(remotes) > 0 {
+		state = StateSelectingRemote
 	}
 
 	// Buscar el cursor del editor actual
@@ -107,6 +114,7 @@ func InitialModel(initialURL, skillsRoot, configLocalPath string, configMode boo
 		Spinner:         s,
 		ConfigMode:      configMode,
 		EditorCursor:    edCursor,
+		Remotes:         remotes,
 	}
 }
 

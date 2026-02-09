@@ -1,4 +1,4 @@
-last_updated = 2026-02-09T17:22:13.464105+01:00
+last_updated = 2026-02-09T17:32:09.043442+01:00
 
 [[skills]]
   name = "build-things"
@@ -43,3 +43,25 @@ last_updated = 2026-02-09T17:22:13.464105+01:00
   commit_hash = "7fc1e3f3b1778a0ce14bc3ee6afc223d5b997ca2"
   installed_at = 2026-02-09T17:16:51.36454+01:00
   updated_at = 2026-02-09T17:22:13.464105+01:00
+
+[[skills]]
+  name = "\"doc\""
+  description = "\"Use when the task involves reading, creating, or editing `.docx` documents, especially when formatting or layout fidelity matters; prefer `python-docx` plus the bundled `scripts/render_docx.py` for visual checks.\""
+  path = ".antigravity/skills/doc"
+  remote_repo = "https://github.com/openai/skills/tree/main/skills"
+  remote_root = "skills"
+  remote_path = ".curated/doc"
+  commit_hash = "7fc1e3f3b1778a0ce14bc3ee6afc223d5b997ca2"
+  installed_at = 2026-02-09T17:32:09.03941+01:00
+  updated_at = 2026-02-09T17:32:09.03941+01:00
+
+[[skills]]
+  name = "figma"
+  description = "Use the Figma MCP server to fetch design context, screenshots, variables, and assets from Figma, and to translate Figma nodes into production code. Trigger when a task involves Figma URLs, node IDs, design-to-code implementation, or Figma MCP setup and troubleshooting."
+  path = ".antigravity/skills/figma"
+  remote_repo = "https://github.com/openai/skills/tree/main/skills"
+  remote_root = "skills"
+  remote_path = ".curated/figma"
+  commit_hash = "7fc1e3f3b1778a0ce14bc3ee6afc223d5b997ca2"
+  installed_at = 2026-02-09T17:32:09.043441+01:00
+  updated_at = 2026-02-09T17:32:09.043441+01:00

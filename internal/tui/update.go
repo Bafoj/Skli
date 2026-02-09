@@ -92,6 +92,95 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.TextInput, cmd = m.TextInput.Update(msg)
 		return m, cmd
 
+	case StateInputNewRemote:
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			if msg.String() == "enter" {
+				url := m.TextInput.Value()
+				if url == "" {
+					return m, nil
+				}
+				// Añadir remote y volver a gestionar
+				m.Remotes = append(m.Remotes, url)
+				_ = config.SaveConfig(config.Config{LocalPath: m.ConfigLocalPath, Remotes: m.Remotes})
+				m.State = StateManageRemotes
+				m.TextInput.Reset()
+				return m, nil
+			} else if msg.String() == "esc" {
+				m.State = StateManageRemotes
+				m.TextInput.Reset()
+				return m, nil
+			}
+		}
+		m.TextInput, cmd = m.TextInput.Update(msg)
+		return m, cmd
+
+	case StateSelectingRemote:
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "up", "k":
+				if m.RemoteCursor > 0 {
+					m.RemoteCursor--
+				}
+			case "down", "j":
+				// Remotes + 1 (Custom)
+				if m.RemoteCursor < len(m.Remotes) { // len(m.Remotes) is the index of "Custom"
+					m.RemoteCursor++
+				}
+			case "enter":
+				// Custom seleccionado (última posición)
+				if m.RemoteCursor == len(m.Remotes) {
+					m.State = StateInputRemote
+					m.TextInput.Focus()
+					return m, nil
+				}
+				// Remote existente seleccionado
+				if m.RemoteCursor < len(m.Remotes) {
+					m.RemoteURL = m.Remotes[m.RemoteCursor]
+					m.State = StateScanning
+					return m, tea.Batch(scanRepoCmd(m.RemoteURL, m.SkillsRoot), m.Spinner.Tick)
+				}
+			}
+		}
+
+	case StateManageRemotes:
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "esc":
+				m.State = StateConfigMenu
+				return m, nil
+			case "up", "k":
+				if m.RemoteCursor > 0 {
+					m.RemoteCursor--
+				}
+			case "down", "j":
+				// Remotes + 1 (Add New)
+				if m.RemoteCursor < len(m.Remotes) {
+					m.RemoteCursor++
+				}
+			case "enter":
+				// Add New seleccionado (última posición)
+				if m.RemoteCursor == len(m.Remotes) {
+					m.State = StateInputNewRemote
+					m.TextInput.Focus()
+					m.TextInput.SetValue("")
+					return m, nil
+				}
+			case "backspace", "d": // Eliminar remote
+				if m.RemoteCursor < len(m.Remotes) {
+					// Eliminar el elemento en m.RemoteCursor
+					m.Remotes = append(m.Remotes[:m.RemoteCursor], m.Remotes[m.RemoteCursor+1:]...)
+					_ = config.SaveConfig(config.Config{LocalPath: m.ConfigLocalPath, Remotes: m.Remotes})
+					// Ajustar cursor si es necesario
+					if m.RemoteCursor >= len(m.Remotes) && m.RemoteCursor > 0 {
+						m.RemoteCursor--
+					}
+				}
+			}
+		}
+
 	case StateSelectingSkills:
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
@@ -133,15 +222,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.ConfigCursor--
 				}
 			case "down", "j":
-				if m.ConfigCursor < 1 { // 0: Local Path, 1: Confirm
+				if m.ConfigCursor < 2 { // 0: Remotes, 1: Local Path, 2: Confirm
 					m.ConfigCursor++
 				}
 			case "enter":
 				if m.ConfigCursor == 0 {
-					m.State = StateSelectingEditor
+					m.State = StateManageRemotes
+					m.RemoteCursor = 0
 				} else if m.ConfigCursor == 1 {
+					m.State = StateSelectingEditor
+				} else if m.ConfigCursor == 2 {
 					// Guardar definitivamente al confirmar
-					_ = config.SaveConfig(config.Config{LocalPath: m.ConfigLocalPath})
+					_ = config.SaveConfig(config.Config{LocalPath: m.ConfigLocalPath, Remotes: m.Remotes})
 					m.State = StateDone
 				}
 				return m, nil
@@ -185,7 +277,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.State = StateDownloading
 
 				// Guardar como configuración predeterminada para el futuro
-				_ = config.SaveConfig(config.Config{LocalPath: destPath})
+				_ = config.SaveConfig(config.Config{LocalPath: destPath, Remotes: m.Remotes})
 
 				var selected []gitrepo.SkillInfo
 				for _, s := range m.Skills {

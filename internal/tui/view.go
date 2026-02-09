@@ -65,6 +65,76 @@ func (m Model) View() string {
 	s.WriteString(titleStyle.Render("skli - Skills Management") + "\n\n")
 
 	switch m.State {
+	case StateSelectingRemote:
+		s.WriteString("Selecciona un repositorio remoto:\n\n")
+
+		// Remotes
+		for i, remote := range m.Remotes {
+			cursor := "  "
+			if m.RemoteCursor == i {
+				cursor = "➜ "
+			}
+
+			if m.RemoteCursor == i {
+				s.WriteString(selectedItemStyle.Render(cursor+remote) + "\n")
+			} else {
+				s.WriteString(itemStyle.Render(cursor+remote) + "\n")
+			}
+		}
+
+		// Custom
+		cursor := "  "
+		if m.RemoteCursor == len(m.Remotes) {
+			cursor = "➜ "
+		}
+		line := "Custom URL..."
+		if m.RemoteCursor == len(m.Remotes) {
+			s.WriteString(selectedItemStyle.Render(cursor+line) + "\n")
+		} else {
+			s.WriteString(itemStyle.Render(cursor+line) + "\n")
+		}
+
+		s.WriteString(helpStyle.Render("\n↑/↓: navegar • enter: seleccionar • q: salir"))
+
+	case StateManageRemotes:
+		s.WriteString("Gestionar Remotos:\n\n")
+		if len(m.Remotes) == 0 {
+			s.WriteString(dimStyle.Render("  (No hay remotos configurados)\n"))
+		}
+
+		// Remotes
+		for i, remote := range m.Remotes {
+			cursor := "  "
+			if m.RemoteCursor == i {
+				cursor = "➜ "
+			}
+
+			if m.RemoteCursor == i {
+				s.WriteString(selectedItemStyle.Render(cursor+remote) + "\n")
+			} else {
+				s.WriteString(itemStyle.Render(cursor+remote) + "\n")
+			}
+		}
+
+		// Add New
+		cursor := "  "
+		if m.RemoteCursor == len(m.Remotes) {
+			cursor = "➜ "
+		}
+		line := "Añadir nuevo..."
+		if m.RemoteCursor == len(m.Remotes) {
+			s.WriteString(selectedItemStyle.Render(cursor+line) + "\n")
+		} else {
+			s.WriteString(itemStyle.Render(cursor+line) + "\n")
+		}
+
+		s.WriteString(helpStyle.Render("\n↑/↓: navegar • enter: añadir • d/bksp: borrar • esc: volver"))
+
+	case StateInputNewRemote:
+		s.WriteString("Introduce la URL del nuevo repositorio:\n\n")
+		s.WriteString(m.TextInput.View() + "\n")
+		s.WriteString(helpStyle.Render("\nenter: guardar • esc: cancelar"))
+
 	case StateInputRemote:
 		s.WriteString("Introduce la URL del repositorio Git remoto:\n\n")
 		s.WriteString(m.TextInput.View() + "\n")
@@ -76,13 +146,25 @@ func (m Model) View() string {
 	case StateConfigMenu:
 		s.WriteString("Configuración Global:\n\n")
 
-		// Opción 1: Local Path
+		// Opción 0: Remotes
 		cursor := "  "
 		if m.ConfigCursor == 0 {
 			cursor = "➜ "
 		}
-		line := "Local Path: " + infoStyle.Render(m.ConfigLocalPath)
+		line := "Gestionar Remotos"
 		if m.ConfigCursor == 0 {
+			s.WriteString(selectedItemStyle.Render(cursor+line) + "\n")
+		} else {
+			s.WriteString(itemStyle.Render(cursor+line) + "\n")
+		}
+
+		// Opción 1: Local Path
+		cursor = "  "
+		if m.ConfigCursor == 1 {
+			cursor = "➜ "
+		}
+		line = "Local Path: " + infoStyle.Render(m.ConfigLocalPath)
+		if m.ConfigCursor == 1 {
 			s.WriteString(selectedItemStyle.Render(cursor+line) + "\n")
 		} else {
 			s.WriteString(itemStyle.Render(cursor+line) + "\n")
@@ -90,11 +172,11 @@ func (m Model) View() string {
 
 		// Opción 2: Confirmar
 		cursor = "  "
-		if m.ConfigCursor == 1 {
+		if m.ConfigCursor == 2 {
 			cursor = "➜ "
 		}
 		line = "Confirmar y Guardar"
-		if m.ConfigCursor == 1 {
+		if m.ConfigCursor == 2 {
 			s.WriteString(selectedItemStyle.Render(cursor+line) + "\n")
 		} else {
 			s.WriteString(itemStyle.Render(cursor+line) + "\n")
