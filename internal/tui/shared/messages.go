@@ -1,13 +1,9 @@
-package tui
+package shared
 
 import "skli/internal/gitrepo"
 
-// Mensajes de navegación entre pantallas
-type NavigateToInputRemoteMsg struct{}
-type NavigateToScanningMsg struct {
-	URL        string
-	SkillsRoot string
-}
+// Mensajes de navegación
+type NavigateToScanningMsg struct{ URL string }
 type NavigateToSkillsMsg struct {
 	Skills     []gitrepo.SkillInfo
 	TempDir    string
@@ -22,8 +18,6 @@ type NavigateToEditorMsg struct {
 	SkillsRoot string
 	CommitHash string
 }
-type NavigateToConfigMsg struct{}
-type NavigateToManageRemotesMsg struct{}
 type NavigateToProgressMsg struct {
 	TempDir         string
 	RemoteURL       string
@@ -32,23 +26,25 @@ type NavigateToProgressMsg struct {
 	CommitHash      string
 	Selected        []gitrepo.SkillInfo
 }
+type NavigateToConfigMsg struct{}
+type NavigateToManageRemotesMsg struct{}
+type NavigateToInputRemoteMsg struct{}
 type NavigateToDoneMsg struct {
 	ConfigMode bool
 	LocalPath  string
 }
-type NavigateToErrorMsg struct {
-	Err error
-}
+type NavigateToErrorMsg struct{ Err error }
 type NavigateToManageMsg struct{}
 type QuitMsg struct{}
 
-// Mensajes de configuración
-type ConfigSavedMsg struct{}
+// Mensajes de estado
 type RemotesUpdatedMsg struct {
 	Remotes []string
 }
 
-// Mensajes de operaciones async
+type ConfigSavedMsg struct{}
+
+// Mensajes de resultado de operaciones
 type ScanResultMsg struct {
 	Result    gitrepo.ScanResult
 	RemoteURL string

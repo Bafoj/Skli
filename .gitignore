@@ -4,4 +4,4 @@
 .DS_Store
 bin/
 skills.db
-skills/
+.*/

@@ -1,10 +1,11 @@
-package tui
+package skills
 
 import (
 	"fmt"
 	"io"
 
 	"skli/internal/gitrepo"
+	"skli/internal/tui/shared"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -13,7 +14,7 @@ import (
 
 // skillItem implementa list.Item para un skill
 type skillItem struct {
-	skill *Skill // Referencia al skill original para mantener el estado de selección
+	skill *shared.Skill // Referencia al skill original para mantener el estado de selección
 }
 
 func (i skillItem) Title() string       { return i.skill.Info.Name }
@@ -28,9 +29,6 @@ type skillDelegate struct {
 func newSkillDelegate() skillDelegate {
 	styles := list.NewDefaultItemStyles()
 	styles.SelectedTitle = styles.SelectedTitle.
-		Foreground(lipgloss.Color("#7D56F4")).
-		BorderForeground(lipgloss.Color("#7D56F4"))
-	styles.SelectedDesc = styles.SelectedDesc.
 		Foreground(lipgloss.Color("#7D56F4")).
 		BorderForeground(lipgloss.Color("#7D56F4"))
 
@@ -84,21 +82,21 @@ func (d skillDelegate) Render(w io.Writer, m list.Model, index int, item list.It
 
 // SkillsScreen es el modelo para la pantalla de selección de skills
 type SkillsScreen struct {
-	list            list.Model
-	skills          []Skill
-	tempDir         string
-	remoteURL       string
-	skillsRoot      string
-	commitHash      string
-	configLocalPath string
+	List            list.Model
+	Skills          []shared.Skill
+	TempDir         string
+	RemoteURL       string
+	SkillsRoot      string
+	CommitHash      string
+	ConfigLocalPath string
 }
 
 // NewSkillsScreen crea una nueva pantalla de selección de skills
 func NewSkillsScreen(infos []gitrepo.SkillInfo, tempDir, remoteURL, skillsRoot, commitHash, configLocalPath string) SkillsScreen {
-	skills := make([]Skill, len(infos))
+	skills := make([]shared.Skill, len(infos))
 	items := make([]list.Item, len(infos))
 	for i, info := range infos {
-		skills[i] = Skill{Info: info}
+		skills[i] = shared.Skill{Info: info}
 		items[i] = skillItem{skill: &skills[i]}
 	}
 
@@ -107,16 +105,16 @@ func NewSkillsScreen(infos []gitrepo.SkillInfo, tempDir, remoteURL, skillsRoot, 
 	l.Title = "Selecciona los skills a instalar"
 	l.SetShowStatusBar(true)
 	l.SetStatusBarItemName("skill", "skills")
-	l.Styles.Title = TitleStyle
+	l.Styles.Title = shared.TitleStyle
 
 	return SkillsScreen{
-		list:            l,
-		skills:          skills,
-		tempDir:         tempDir,
-		remoteURL:       remoteURL,
-		skillsRoot:      skillsRoot,
-		commitHash:      commitHash,
-		configLocalPath: configLocalPath,
+		List:            l,
+		Skills:          skills,
+		TempDir:         tempDir,
+		RemoteURL:       remoteURL,
+		SkillsRoot:      skillsRoot,
+		CommitHash:      commitHash,
+		ConfigLocalPath: configLocalPath,
 	}
 }
 
@@ -127,37 +125,37 @@ func (s SkillsScreen) Init() tea.Cmd {
 func (s SkillsScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		s.list.SetSize(msg.Width, msg.Height-4)
+		s.List.SetSize(msg.Width, msg.Height-4)
 		return s, nil
 
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
 			var selected []gitrepo.SkillInfo
-			for _, sk := range s.skills {
+			for _, sk := range s.Skills {
 				if sk.Selected {
 					selected = append(selected, sk.Info)
 				}
 			}
 			if len(selected) > 0 {
-				if s.configLocalPath == "" {
+				if s.ConfigLocalPath == "" {
 					return s, func() tea.Msg {
-						return NavigateToEditorMsg{
-							Skills:     s.skills,
-							TempDir:    s.tempDir,
-							RemoteURL:  s.remoteURL,
-							SkillsRoot: s.skillsRoot,
-							CommitHash: s.commitHash,
+						return shared.NavigateToEditorMsg{
+							Skills:     s.Skills,
+							TempDir:    s.TempDir,
+							RemoteURL:  s.RemoteURL,
+							SkillsRoot: s.SkillsRoot,
+							CommitHash: s.CommitHash,
 						}
 					}
 				}
 				return s, func() tea.Msg {
-					return NavigateToProgressMsg{
-						TempDir:         s.tempDir,
-						RemoteURL:       s.remoteURL,
-						SkillsRoot:      s.skillsRoot,
-						ConfigLocalPath: s.configLocalPath,
-						CommitHash:      s.commitHash,
+					return shared.NavigateToProgressMsg{
+						TempDir:         s.TempDir,
+						RemoteURL:       s.RemoteURL,
+						SkillsRoot:      s.SkillsRoot,
+						ConfigLocalPath: s.ConfigLocalPath,
+						CommitHash:      s.CommitHash,
 						Selected:        selected,
 					}
 				}
@@ -166,14 +164,14 @@ func (s SkillsScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	var cmd tea.Cmd
-	s.list, cmd = s.list.Update(msg)
+	s.List, cmd = s.List.Update(msg)
 	return s, cmd
 }
 
 func (s SkillsScreen) View() string {
-	originalTitle := s.list.Title
-	s.list.Title = fmt.Sprintf("%s (Pág. %d/%d)", originalTitle, s.list.Paginator.Page+1, s.list.Paginator.TotalPages)
-	view := s.list.View()
-	s.list.Title = originalTitle
+	originalTitle := s.List.Title
+	s.List.Title = fmt.Sprintf("%s (Pág. %d/%d)", originalTitle, s.List.Paginator.Page+1, s.List.Paginator.TotalPages)
+	view := s.List.View()
+	s.List.Title = originalTitle
 	return view
 }

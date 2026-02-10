@@ -1,10 +1,11 @@
-package tui
+package editor
 
 import (
 	"fmt"
 	"io"
 
 	"skli/internal/gitrepo"
+	"skli/internal/tui/shared"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -13,7 +14,7 @@ import (
 
 // editorItem implementa list.DefaultItem para un editor
 type editorItem struct {
-	editor Editor
+	editor shared.Editor
 }
 
 func (i editorItem) Title() string { return i.editor.Name }
@@ -33,9 +34,6 @@ type editorDelegate struct {
 func newEditorDelegate() editorDelegate {
 	styles := list.NewDefaultItemStyles()
 	styles.SelectedTitle = styles.SelectedTitle.
-		Foreground(lipgloss.Color("#7D56F4")).
-		BorderForeground(lipgloss.Color("#7D56F4"))
-	styles.SelectedDesc = styles.SelectedDesc.
 		Foreground(lipgloss.Color("#7D56F4")).
 		BorderForeground(lipgloss.Color("#7D56F4"))
 
@@ -70,20 +68,20 @@ func (d editorDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 
 // EditorScreen es el modelo para la pantalla de selección de editor
 type EditorScreen struct {
-	list       list.Model
-	skills     []Skill
-	tempDir    string
-	remoteURL  string
-	skillsRoot string
-	commitHash string
-	configMode bool
-	remotes    []string
+	List       list.Model
+	Skills     []shared.Skill
+	TempDir    string
+	RemoteURL  string
+	SkillsRoot string
+	CommitHash string
+	ConfigMode bool
+	Remotes    []string
 }
 
 // NewEditorScreen crea una nueva pantalla de selección de editor
-func NewEditorScreen(skills []Skill, tempDir, remoteURL, skillsRoot, commitHash string, configMode bool, remotes []string) EditorScreen {
-	items := make([]list.Item, len(Editors))
-	for i, ed := range Editors {
+func NewEditorScreen(skills []shared.Skill, tempDir, remoteURL, skillsRoot, commitHash string, configMode bool, remotes []string) EditorScreen {
+	items := make([]list.Item, len(shared.Editors))
+	for i, ed := range shared.Editors {
 		items[i] = editorItem{editor: ed}
 	}
 
@@ -92,33 +90,32 @@ func NewEditorScreen(skills []Skill, tempDir, remoteURL, skillsRoot, commitHash 
 	l.Title = "Selecciona tu editor"
 	l.SetShowStatusBar(true)
 	l.SetStatusBarItemName("editor", "editores")
-	l.Styles.Title = TitleStyle
+	l.Styles.Title = shared.TitleStyle
 
 	return EditorScreen{
-		list:       l,
-		skills:     skills,
-		tempDir:    tempDir,
-		remoteURL:  remoteURL,
-		skillsRoot: skillsRoot,
-		commitHash: commitHash,
-		configMode: configMode,
-		remotes:    remotes,
+		List:       l,
+		Skills:     skills,
+		TempDir:    tempDir,
+		RemoteURL:  remoteURL,
+		SkillsRoot: skillsRoot,
+		CommitHash: commitHash,
+		ConfigMode: configMode,
+		Remotes:    remotes,
 	}
 }
 
 // NewEditorScreenForConfig crea una pantalla de editor desde config
 func NewEditorScreenForConfig(currentPath string, remotes []string) EditorScreen {
-	items := make([]list.Item, len(Editors))
+	items := make([]list.Item, len(shared.Editors))
 	cursor := 0
-	for i, ed := range Editors {
+	for i, ed := range shared.Editors {
 		items[i] = editorItem{editor: ed}
 		if ed.Path == currentPath && ed.Path != "" {
 			cursor = i
 		}
 	}
-	// Si no coincide con ninguno conocido pero hay path, marcar como Custom (último)
-	if cursor == 0 && currentPath != "" && currentPath != Editors[0].Path {
-		cursor = len(Editors) - 1
+	if cursor == 0 && currentPath != "" && currentPath != shared.Editors[0].Path {
+		cursor = len(shared.Editors) - 1
 	}
 
 	delegate := newEditorDelegate()
@@ -126,12 +123,12 @@ func NewEditorScreenForConfig(currentPath string, remotes []string) EditorScreen
 	l.Title = "Configura tu editor"
 	l.Select(cursor)
 	l.SetShowStatusBar(true)
-	l.Styles.Title = TitleStyle
+	l.Styles.Title = shared.TitleStyle
 
 	return EditorScreen{
-		list:       l,
-		configMode: true,
-		remotes:    remotes,
+		List:       l,
+		ConfigMode: true,
+		Remotes:    remotes,
 	}
 }
 
@@ -142,15 +139,15 @@ func (s EditorScreen) Init() tea.Cmd {
 func (s EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		s.list.SetSize(msg.Width, msg.Height-4)
+		s.List.SetSize(msg.Width, msg.Height-4)
 		return s, nil
 
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc", "backspace":
-			return s, func() tea.Msg { return NavigateToConfigMsg{} }
+			return s, func() tea.Msg { return shared.NavigateToConfigMsg{} }
 		case "enter":
-			selected := s.list.SelectedItem()
+			selected := s.List.SelectedItem()
 			if selected == nil {
 				return s, nil
 			}
@@ -160,27 +157,27 @@ func (s EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				destPath = "skills"
 			}
 
-			if s.configMode {
+			if s.ConfigMode {
 				return s, tea.Batch(
-					SaveConfigCmd(destPath, s.remotes),
-					func() tea.Msg { return NavigateToConfigMsg{} },
+					shared.SaveConfigCmd(destPath, s.Remotes),
+					func() tea.Msg { return shared.NavigateToConfigMsg{} },
 				)
 			}
 
 			var selectedSkills []gitrepo.SkillInfo
-			for _, sk := range s.skills {
+			for _, sk := range s.Skills {
 				if sk.Selected {
 					selectedSkills = append(selectedSkills, sk.Info)
 				}
 			}
 
 			return s, func() tea.Msg {
-				return NavigateToProgressMsg{
-					TempDir:         s.tempDir,
-					RemoteURL:       s.remoteURL,
-					SkillsRoot:      s.skillsRoot,
+				return shared.NavigateToProgressMsg{
+					TempDir:         s.TempDir,
+					RemoteURL:       s.RemoteURL,
+					SkillsRoot:      s.SkillsRoot,
 					ConfigLocalPath: destPath,
-					CommitHash:      s.commitHash,
+					CommitHash:      s.CommitHash,
 					Selected:        selectedSkills,
 				}
 			}
@@ -188,14 +185,14 @@ func (s EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	var cmd tea.Cmd
-	s.list, cmd = s.list.Update(msg)
+	s.List, cmd = s.List.Update(msg)
 	return s, cmd
 }
 
 func (s EditorScreen) View() string {
-	originalTitle := s.list.Title
-	s.list.Title = fmt.Sprintf("%s (Pág. %d/%d)", originalTitle, s.list.Paginator.Page+1, s.list.Paginator.TotalPages)
-	view := s.list.View()
-	s.list.Title = originalTitle
+	originalTitle := s.List.Title
+	s.List.Title = fmt.Sprintf("%s (Pág. %d/%d)", originalTitle, s.List.Paginator.Page+1, s.List.Paginator.TotalPages)
+	view := s.List.View()
+	s.List.Title = originalTitle
 	return view
 }

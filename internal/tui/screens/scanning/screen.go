@@ -1,47 +1,49 @@
-package tui
+package scanning
 
 import (
+	"skli/internal/tui/shared"
+
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 // ScanningScreen es el modelo para la pantalla de escaneo
 type ScanningScreen struct {
-	spinner    spinner.Model
-	url        string
-	skillsRoot string
+	Spinner    spinner.Model
+	URL        string
+	SkillsRoot string
 }
 
 // NewScanningScreen crea una nueva pantalla de escaneo
 func NewScanningScreen(url, skillsRoot string) ScanningScreen {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	s.Style = SpinnerStyle
+	s.Style = shared.SpinnerStyle
 
 	return ScanningScreen{
-		spinner:    s,
-		url:        url,
-		skillsRoot: skillsRoot,
+		Spinner:    s,
+		URL:        url,
+		SkillsRoot: skillsRoot,
 	}
 }
 
 func (s ScanningScreen) Init() tea.Cmd {
 	return tea.Batch(
-		s.spinner.Tick,
-		ScanRepoCmd(s.url, s.skillsRoot),
+		s.Spinner.Tick,
+		shared.ScanRepoCmd(s.URL, s.SkillsRoot),
 	)
 }
 
 func (s ScanningScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case ScanResultMsg:
+	case shared.ScanResultMsg:
 		if msg.Err != nil {
 			return s, func() tea.Msg {
-				return NavigateToErrorMsg{Err: msg.Err}
+				return shared.NavigateToErrorMsg{Err: msg.Err}
 			}
 		}
 		return s, func() tea.Msg {
-			return NavigateToSkillsMsg{
+			return shared.NavigateToSkillsMsg{
 				Skills:     msg.Result.Skills,
 				TempDir:    msg.Result.TempDir,
 				RemoteURL:  msg.RemoteURL,
@@ -52,7 +54,7 @@ func (s ScanningScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
-		s.spinner, cmd = s.spinner.Update(msg)
+		s.Spinner, cmd = s.Spinner.Update(msg)
 		return s, cmd
 	}
 
@@ -60,5 +62,5 @@ func (s ScanningScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (s ScanningScreen) View() string {
-	return s.spinner.View() + " Escaneando el repositorio remoto..."
+	return s.Spinner.View() + " Escaneando el repositorio remoto..."
 }

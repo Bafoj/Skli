@@ -3,6 +3,15 @@ package tui
 import (
 	"strings"
 
+	"skli/internal/tui/screens/config"
+	"skli/internal/tui/screens/editor"
+	"skli/internal/tui/screens/manage"
+	"skli/internal/tui/screens/progress"
+	"skli/internal/tui/screens/remote"
+	"skli/internal/tui/screens/scanning"
+	"skli/internal/tui/screens/skills"
+	"skli/internal/tui/shared"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -22,15 +31,15 @@ func NewRootModel(initialURL, skillsRoot, configLocalPath string, configMode, ma
 	var activeScreen tea.Model
 
 	if manageMode {
-		activeScreen, _ = NewManageScreen(remotes)
+		activeScreen, _ = manage.NewManageScreen(remotes)
 	} else if configMode {
-		activeScreen = NewConfigScreen(configLocalPath, remotes)
+		activeScreen = config.NewConfigScreen(configLocalPath, remotes)
 	} else if initialURL != "" {
-		activeScreen = NewScanningScreen(initialURL, skillsRoot)
+		activeScreen = scanning.NewScanningScreen(initialURL, skillsRoot)
 	} else if len(remotes) > 0 {
-		activeScreen = NewRemoteScreen(remotes, configLocalPath, false)
+		activeScreen = remote.NewRemoteScreen(remotes, configLocalPath, false)
 	} else {
-		activeScreen = NewRemoteScreen(remotes, configLocalPath, false)
+		activeScreen = remote.NewRemoteScreen(remotes, configLocalPath, false)
 	}
 
 	return RootModel{
@@ -57,7 +66,7 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.String() == "q" {
 			// Verificar si es una pantalla que acepta q para salir
 			switch m.activeScreen.(type) {
-			case RemoteScreen, SkillsScreen, EditorScreen, ConfigScreen:
+			case remote.RemoteScreen, skills.SkillsScreen, editor.EditorScreen, config.ConfigScreen:
 				m.quitting = true
 				return m, tea.Quit
 			}
@@ -72,64 +81,65 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	// Mensajes de navegación
-	case QuitMsg:
+	case shared.QuitMsg:
 		m.quitting = true
 		return m, tea.Quit
 
-	case NavigateToInputRemoteMsg:
-		m.activeScreen = NewRemoteScreen(m.remotes, m.configLocalPath, false)
+	case shared.NavigateToInputRemoteMsg:
+		m.activeScreen = remote.NewRemoteScreen(m.remotes, m.configLocalPath, false)
 		return m, m.activeScreen.Init()
 
-	case NavigateToScanningMsg:
-		m.activeScreen = NewScanningScreen(msg.URL, m.skillsRoot)
+	case shared.NavigateToScanningMsg:
+		m.activeScreen = scanning.NewScanningScreen(msg.URL, m.skillsRoot)
 		return m, m.activeScreen.Init()
 
-	case NavigateToSkillsMsg:
-		m.activeScreen = NewSkillsScreen(msg.Skills, msg.TempDir, msg.RemoteURL, msg.SkillsRoot, msg.CommitHash, m.configLocalPath)
+	case shared.NavigateToSkillsMsg:
+		m.activeScreen = skills.NewSkillsScreen(msg.Skills, msg.TempDir, msg.RemoteURL, msg.SkillsRoot, msg.CommitHash, m.configLocalPath)
 		return m, m.activeScreen.Init()
 
-	case NavigateToEditorMsg:
+	case shared.NavigateToEditorMsg:
 		if len(msg.Skills) > 0 {
 			// Desde skills selection
-			m.activeScreen = NewEditorScreen(msg.Skills, msg.TempDir, msg.RemoteURL, msg.SkillsRoot, msg.CommitHash, false, m.remotes)
+			m.activeScreen = editor.NewEditorScreen(msg.Skills, msg.TempDir, msg.RemoteURL, msg.SkillsRoot, msg.CommitHash, false, m.remotes)
 		} else {
 			// Desde config
-			m.activeScreen = NewEditorScreenForConfig(m.configLocalPath, m.remotes)
+			m.activeScreen = editor.NewEditorScreenForConfig(m.configLocalPath, m.remotes)
 		}
 		return m, m.activeScreen.Init()
 
-	case NavigateToConfigMsg:
-		m.activeScreen = NewConfigScreen(m.configLocalPath, m.remotes)
+	case shared.NavigateToConfigMsg:
+		m.activeScreen = config.NewConfigScreen(m.configLocalPath, m.remotes)
 		return m, m.activeScreen.Init()
 
-	case NavigateToManageRemotesMsg:
-		m.activeScreen = NewRemoteManageScreen(m.remotes, m.configLocalPath)
+	case shared.NavigateToManageRemotesMsg:
+		m.activeScreen = remote.NewRemoteManageScreen(m.remotes, m.configLocalPath)
 		return m, m.activeScreen.Init()
 
-	case NavigateToProgressMsg:
-		screen, cmd := NewProgressScreenDownloading(msg.TempDir, msg.RemoteURL, msg.SkillsRoot, msg.ConfigLocalPath, msg.CommitHash, msg.Selected)
+	case shared.NavigateToProgressMsg:
+		screen, cmd := progress.NewProgressScreenDownloading(msg.TempDir, msg.RemoteURL, msg.SkillsRoot, msg.ConfigLocalPath, msg.CommitHash, msg.Selected)
 		m.activeScreen = screen
 		m.configLocalPath = msg.ConfigLocalPath
 		return m, cmd
 
-	case NavigateToDoneMsg:
-		m.activeScreen = NewDoneScreen(msg.ConfigMode, msg.LocalPath)
+	case shared.NavigateToDoneMsg:
+		m.activeScreen = progress.NewDoneScreen(msg.ConfigMode, msg.LocalPath)
 		return m, m.activeScreen.Init()
 
-	case NavigateToErrorMsg:
-		m.activeScreen = NewErrorScreen(msg.Err)
+	case shared.NavigateToErrorMsg:
+		// TODO: Crear ErrorScreen en package dedicado si es necesario, por ahora NewErrorScreen está en progress
+		m.activeScreen = progress.NewErrorScreen(msg.Err)
 		return m, m.activeScreen.Init()
 
-	case NavigateToManageMsg:
-		screen, cmd := NewManageScreen(m.remotes)
+	case shared.NavigateToManageMsg:
+		screen, cmd := manage.NewManageScreen(m.remotes)
 		m.activeScreen = screen
 		return m, cmd
 
-	case RemotesUpdatedMsg:
+	case shared.RemotesUpdatedMsg:
 		m.remotes = msg.Remotes
 		// Continuar con update normal
 
-	case ConfigSavedMsg:
+	case shared.ConfigSavedMsg:
 		// Config guardado, solo continuar
 	}
 
@@ -145,7 +155,6 @@ func (m RootModel) View() string {
 	}
 
 	var s strings.Builder
-	// s.WriteString(TitleStyle.Render("skli - Skills Management") + "\n\n")
 	s.WriteString(m.activeScreen.View())
 
 	return s.String()
