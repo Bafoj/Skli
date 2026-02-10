@@ -9,4 +9,4 @@ Permitir indicar el remote en el comando skli add remote_name url o si no tiene 
 Mejorar el explorador de skills en el remote, hacer busqueda recursiva - done
 Permitir clonar partiendo de la url específica de un repo de git - done
 Meter animación durante la sincronización y descarga de un skill - done
-Meter comando para subir un skill a un remote creando una pull request
+Meter comando para subir un skill a un remote creando una pull request - done

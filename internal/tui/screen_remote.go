@@ -12,10 +12,16 @@ import (
 
 // remoteItem implementa list.DefaultItem para un remote
 type remoteItem struct {
-	url string
+	url         string
+	displayName string
 }
 
-func (i remoteItem) Title() string       { return i.url }
+func (i remoteItem) Title() string {
+	if i.displayName != "" {
+		return i.displayName
+	}
+	return i.url
+}
 func (i remoteItem) Description() string { return "" }
 func (i remoteItem) FilterValue() string { return i.url }
 

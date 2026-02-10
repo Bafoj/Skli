@@ -22,7 +22,7 @@ func NewRootModel(initialURL, skillsRoot, configLocalPath string, configMode, ma
 	var activeScreen tea.Model
 
 	if manageMode {
-		activeScreen, _ = NewManageScreen()
+		activeScreen, _ = NewManageScreen(remotes)
 	} else if configMode {
 		activeScreen = NewConfigScreen(configLocalPath, remotes)
 	} else if initialURL != "" {
@@ -121,7 +121,7 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.activeScreen.Init()
 
 	case NavigateToManageMsg:
-		screen, cmd := NewManageScreen()
+		screen, cmd := NewManageScreen(m.remotes)
 		m.activeScreen = screen
 		return m, cmd
 

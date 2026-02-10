@@ -1,0 +1,155 @@
+package gitrepo
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
+)
+
+// CheckGhInstalled verifica si la herramienta CLI 'gh' está instalada
+func CheckGhInstalled() bool {
+	_, err := exec.LookPath("gh")
+	return err == nil
+}
+
+// CloneForPush clona el repositorio completo para realizar cambios y push
+func CloneForPush(remoteURL string) (string, error) {
+	tempDir, err := os.MkdirTemp("", "skli-pr-*")
+	if err != nil {
+		return "", fmt.Errorf("error creando dir temporal: %w", err)
+	}
+
+	// Clonar repo completo (no sparse)
+	// Usamos depth 1 para agilizar si es posible, pero para push a veces da problemas si no tenemos historia completa
+	// Para mayor seguridad usamos full clone.
+	if err := runGit(tempDir, "clone", remoteURL, "."); err != nil {
+		os.RemoveAll(tempDir)
+		return "", fmt.Errorf("error clonando repo: %w", err)
+	}
+
+	return tempDir, nil
+}
+
+// PrepareSkillBranch crea una rama para el skill y devuelve el nombre de la rama
+func PrepareSkillBranch(repoDir, skillName string) (string, error) {
+	timestamp := time.Now().Format("20060102-150405")
+	sanitizedName := strings.ReplaceAll(strings.ToLower(skillName), " ", "-")
+	// Limpieza extra
+	sanitizedName = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+			return r
+		}
+		return -1
+	}, sanitizedName)
+
+	branchName := fmt.Sprintf("feat/update-%s-%s", sanitizedName, timestamp)
+
+	if err := runGit(repoDir, "checkout", "-b", branchName); err != nil {
+		return "", fmt.Errorf("error creando rama %s: %w", branchName, err)
+	}
+
+	return branchName, nil
+}
+
+// FindSkillInRepo busca la ruta relativa del skill dentro del repositorio clonado
+// Esto es necesario porque la info que tenemos puede ser un path relativo que ha cambiado o para validacion
+// Usamos el nombre del skill para buscarlo en caso de duda, o si tenemos el path exacto lo usamos.
+// En este caso, asumimos que 'path' es la ruta relativa desde la raíz del repo donde está el SKILL.md
+func FindSkillInRepo(repoDir, skillName string) (string, error) {
+	// Buscar recursivamente SKILL.md y ver si coincide el nombre
+	var foundPath string
+	err := filepath.Walk(repoDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+		if !info.IsDir() && info.Name() == "SKILL.md" {
+			skill, err := parseSkillFile(path, repoDir)
+			if err == nil && skill.Name == skillName {
+				foundPath = skill.Path
+				return filepath.SkipAll
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+	if foundPath == "" {
+		return "", fmt.Errorf("skill '%s' no encontrado en el repositorio remoto", skillName)
+	}
+	return foundPath, nil
+}
+
+// CopySkillFiles copia los contenidos del skill local al directorio del repo clonado
+// localSkillPath: ruta absoluta local donde está instalado el skill
+// repoDir: ruta temp del repo clonado
+// repoSkillPath: ruta relativa dentro del repo donde va el skill
+func CopySkillFiles(repoDir, localSkillPath, repoSkillPath string) error {
+	destDir := filepath.Join(repoDir, repoSkillPath)
+
+	// Opción: borrar contenido previo para asegurar que borrados locales se reflejen
+	// PERO cuidado con borrar archivos ocultos tipo .gitignore si no los tenemos localmente (aunque skills suelen ser autocontenidos)
+	// Vamos a borrar y recrear para ser consistentes con la "versión local es la verdad".
+	os.RemoveAll(destDir)
+
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return fmt.Errorf("error creando directorio destino: %w", err)
+	}
+
+	// Copiar archivos
+	// Usamos 'cp -r' del sistema
+	cmd := exec.Command("cp", "-r", localSkillPath+"/", destDir)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("error copiando archivos: %w : %s", err, string(output))
+	}
+
+	return nil
+}
+
+// PushAndCreatePR hace commit, push y crea la PR
+func PushAndCreatePR(repoDir, branchName, skillName, description string) (string, error) {
+	// Configure git user localmente para este repo si no está config global
+	// Intentamos commit, si falla por falta de config, configuramos dummy
+	// Pero es mejor config dummy siempre si es automatizado?
+	// Si el usuario ya tiene git, usará su user.
+	// Probemos commit directo.
+
+	if err := runGit(repoDir, "add", "."); err != nil {
+		return "", fmt.Errorf("git add falló: %w", err)
+	}
+
+	// Check si hay cambios
+	if err := runGit(repoDir, "diff", "--staged", "--quiet"); err == nil {
+		return "", fmt.Errorf("no hay cambios para subir (el contenido local es idéntico al remoto)")
+	}
+
+	msg := fmt.Sprintf("feat(%s): update skill content", skillName)
+	if err := runGit(repoDir, "commit", "-m", msg); err != nil {
+		return "", fmt.Errorf("git commit falló: %w", err)
+	}
+
+	if err := runGit(repoDir, "push", "origin", branchName); err != nil {
+		return "", fmt.Errorf("git push falló: %w", err)
+	}
+
+	// Crear PR
+	title := fmt.Sprintf("Update skill: %s", skillName)
+	body := fmt.Sprintf("This PR updates the skill '%s'.\n\nAutomatically generated by skli.\n\n%s", skillName, description)
+
+	// Usamos gh pr create
+	// --head branchName
+	// --base (defecto del repo)
+	cmdArgs := []string{"pr", "create", "--title", title, "--body", body, "--head", branchName}
+	cmd := exec.Command("gh", cmdArgs...)
+	cmd.Dir = repoDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("error crando PR con gh: %w : %s", err, string(output))
+	}
+
+	return strings.TrimSpace(string(output)), nil
+}
