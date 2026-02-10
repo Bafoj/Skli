@@ -6,11 +6,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
-
-	// Sub-views
-	"skli/internal/tui/screens/progress/done"
-	"skli/internal/tui/screens/progress/downloading"
-	"skli/internal/tui/screens/progress/error_view"
 )
 
 type State int
@@ -63,51 +58,4 @@ func NewErrorScreen(err error) ProgressScreen {
 		State:        StateError,
 		ErrorMessage: err.Error(),
 	}
-}
-
-func (s ProgressScreen) Init() tea.Cmd {
-	if s.State == StateDownloading {
-		return s.Spinner.Tick
-	}
-	return nil
-}
-
-func (s ProgressScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case shared.DownloadResultMsg:
-		if msg.Err != nil {
-			s.State = StateError
-			s.ErrorMessage = msg.Err.Error()
-		} else {
-			s.State = StateDone
-		}
-		return s, nil
-
-	case spinner.TickMsg:
-		if s.State == StateDownloading {
-			var cmd tea.Cmd
-			s.Spinner, cmd = s.Spinner.Update(msg)
-			return s, cmd
-		}
-
-	case tea.KeyMsg:
-		if msg.String() == "r" && s.State == StateError {
-			return s, func() tea.Msg { return shared.NavigateToInputRemoteMsg{} }
-		}
-		return s, func() tea.Msg { return shared.QuitMsg{} }
-	}
-
-	return s, nil
-}
-
-func (s ProgressScreen) View() string {
-	switch s.State {
-	case StateDownloading:
-		return downloading.View(s.Spinner, s.ConfigLocalPath)
-	case StateDone:
-		return done.View(s.ConfigMode, s.ConfigLocalPath)
-	case StateError:
-		return error_view.View(s.ErrorMessage)
-	}
-	return ""
 }

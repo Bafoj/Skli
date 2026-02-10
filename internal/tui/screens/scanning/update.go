@@ -7,26 +7,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// ScanningScreen es el modelo para la pantalla de escaneo
-type ScanningScreen struct {
-	Spinner    spinner.Model
-	URL        string
-	SkillsRoot string
-}
-
-// NewScanningScreen crea una nueva pantalla de escaneo
-func NewScanningScreen(url, skillsRoot string) ScanningScreen {
-	s := spinner.New()
-	s.Spinner = spinner.Dot
-	s.Style = shared.SpinnerStyle
-
-	return ScanningScreen{
-		Spinner:    s,
-		URL:        url,
-		SkillsRoot: skillsRoot,
-	}
-}
-
 func (s ScanningScreen) Init() tea.Cmd {
 	return tea.Batch(
 		s.Spinner.Tick,
@@ -59,8 +39,4 @@ func (s ScanningScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return s, nil
-}
-
-func (s ScanningScreen) View() string {
-	return s.Spinner.View() + " Escaneando el repositorio remoto..."
 }

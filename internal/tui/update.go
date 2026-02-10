@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"strings"
-
 	"skli/internal/tui/screens/config"
 	"skli/internal/tui/screens/editor"
 	"skli/internal/tui/screens/manage"
@@ -14,45 +12,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 )
-
-// RootModel es el modelo principal que actúa como router
-type RootModel struct {
-	activeScreen    tea.Model
-	configLocalPath string
-	remotes         []string
-	skillsRoot      string
-	quitting        bool
-	windowWidth     int
-	windowHeight    int
-}
-
-// NewRootModel crea el modelo principal
-func NewRootModel(initialURL, skillsRoot, configLocalPath string, configMode, manageMode bool, remotes []string) RootModel {
-	var activeScreen tea.Model
-
-	if manageMode {
-		activeScreen, _ = manage.NewManageScreen(remotes)
-	} else if configMode {
-		activeScreen = config.NewConfigScreen(configLocalPath, remotes)
-	} else if initialURL != "" {
-		activeScreen = scanning.NewScanningScreen(initialURL, skillsRoot)
-	} else if len(remotes) > 0 {
-		activeScreen = remote.NewRemoteScreen(remotes, configLocalPath, false)
-	} else {
-		activeScreen = remote.NewRemoteScreen(remotes, configLocalPath, false)
-	}
-
-	return RootModel{
-		activeScreen:    activeScreen,
-		configLocalPath: configLocalPath,
-		remotes:         remotes,
-		skillsRoot:      skillsRoot,
-	}
-}
-
-func (m RootModel) Init() tea.Cmd {
-	return m.activeScreen.Init()
-}
 
 func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Eventos globales
@@ -126,7 +85,6 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.activeScreen.Init()
 
 	case shared.NavigateToErrorMsg:
-		// TODO: Crear ErrorScreen en package dedicado si es necesario, por ahora NewErrorScreen está en progress
 		m.activeScreen = progress.NewErrorScreen(msg.Err)
 		return m, m.activeScreen.Init()
 
@@ -147,15 +105,4 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.activeScreen, cmd = m.activeScreen.Update(msg)
 	return m, cmd
-}
-
-func (m RootModel) View() string {
-	if m.quitting {
-		return "¡Hasta luego!\n"
-	}
-
-	var s strings.Builder
-	s.WriteString(m.activeScreen.View())
-
-	return s.String()
 }
