@@ -95,3 +95,28 @@ func GetSkillsByRepo() (map[string][]InstalledSkill, error) {
 	}
 	return grouped, nil
 }
+
+// DeleteInstalledSkill elimina un skill del lock file por su nombre (o ruta relativa)
+func DeleteInstalledSkill(path string) error {
+	lock, err := LoadLockFile()
+	if err != nil {
+		return err
+	}
+
+	newSkills := make([]InstalledSkill, 0)
+	found := false
+	for _, s := range lock.Skills {
+		if s.Path == path {
+			found = true
+			continue
+		}
+		newSkills = append(newSkills, s)
+	}
+
+	if !found {
+		return nil // No estaba, nada que hacer
+	}
+
+	lock.Skills = newSkills
+	return SaveLockFile(lock)
+}

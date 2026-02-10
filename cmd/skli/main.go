@@ -37,6 +37,9 @@ func main() {
 		case "sync":
 			runSync()
 			return
+		case "manage":
+			runManage()
+			return
 		}
 	}
 
@@ -52,7 +55,7 @@ func main() {
 	}
 
 	// Modo interactivo normal
-	p := tea.NewProgram(tui.InitialModel(initialURL, *pathFlag, cfg.LocalPath, false, cfg.Remotes), tea.WithAltScreen())
+	p := tea.NewProgram(tui.NewRootModel(initialURL, *pathFlag, cfg.LocalPath, false, false, cfg.Remotes), tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Ocurrió un error: %v", err)
@@ -105,9 +108,17 @@ func runSync() {
 }
 
 func runConfig(cfg config.Config) {
-	p := tea.NewProgram(tui.InitialModel("", "skills", cfg.LocalPath, true, cfg.Remotes), tea.WithAltScreen())
+	p := tea.NewProgram(tui.NewRootModel("", "skills", cfg.LocalPath, true, false, cfg.Remotes), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Ocurrió un error en la configuración: %v", err)
+		os.Exit(1)
+	}
+}
+
+func runManage() {
+	p := tea.NewProgram(tui.NewRootModel("", "skills", "", false, true, nil), tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Ocurrió un error en la gestión: %v", err)
 		os.Exit(1)
 	}
 }
