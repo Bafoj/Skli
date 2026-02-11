@@ -1,0 +1,53 @@
+# .goreleaser.yaml
+# GoReleaser configuration for skli
+
+version: 2
+
+project_name: skli
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: skli
+    main: ./cmd/skli
+    binary: skli
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - formats: [tar.gz]
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - skli.lock
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  version_template: "{{ .Version }}-snapshot"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+# Publishing to Bitbucket is handled via the Makefile and scripts/upload_to_bitbucket.sh
+# because GoReleaser OSS does not support Bitbucket Releases natively or 'after' hooks.
