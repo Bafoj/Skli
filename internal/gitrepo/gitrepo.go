@@ -1,12 +1,13 @@
 package gitrepo
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"skli/internal/skillmeta"
 )
 
 // DefaultSkillsPath es el path por defecto donde buscar skills
@@ -224,51 +225,20 @@ func findSkills(baseDir string) ([]SkillInfo, error) {
 
 // parseSkillFile extrae el nombre y descripción del YAML frontmatter
 func parseSkillFile(filePath, baseDir string) (SkillInfo, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return SkillInfo{}, err
-	}
-	defer file.Close()
-
 	var skill SkillInfo
 	// Obtener la carpeta del skill (padre de SKILL.md)
 	skillDir := filepath.Dir(filePath)
 	relPath, _ := filepath.Rel(baseDir, skillDir)
 	skill.Path = relPath
 
-	scanner := bufio.NewScanner(file)
-	inFrontmatter := false
-	lineCount := 0
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		lineCount++
-
-		// Detectar inicio/fin del frontmatter
-		if strings.TrimSpace(line) == "---" {
-			if !inFrontmatter {
-				inFrontmatter = true
-				continue
-			} else {
-				break // Fin del frontmatter
-			}
-		}
-
-		if inFrontmatter {
-			if strings.HasPrefix(line, "name:") {
-				skill.Name = strings.TrimSpace(strings.TrimPrefix(line, "name:"))
-			} else if strings.HasPrefix(line, "description:") {
-				skill.Description = strings.TrimSpace(strings.TrimPrefix(line, "description:"))
-			}
-		}
-
-		// Solo leer las primeras líneas para evitar parsear todo el archivo
-		if lineCount > 20 {
-			break
-		}
+	meta, err := skillmeta.ParseFile(filePath, 20)
+	if err != nil {
+		return SkillInfo{}, err
 	}
+	skill.Name = meta.Name
+	skill.Description = meta.Description
 
-	return skill, scanner.Err()
+	return skill, nil
 }
 
 // InstallSkills copia las carpetas seleccionadas al PWD de forma plana

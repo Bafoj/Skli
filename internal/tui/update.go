@@ -89,7 +89,7 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.activeScreen.Init()
 
 	case shared.NavigateToManageMsg:
-		screen, cmd := manage.NewManageScreen(m.remotes)
+		screen, cmd := manage.NewManageScreen(m.remotes, m.manageMode)
 		m.activeScreen = screen
 		return m, cmd
 

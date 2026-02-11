@@ -2,16 +2,24 @@ package gitrepo
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"skli/internal/db"
 )
 
 // CheckGhInstalled verifica si la herramienta CLI 'gh' está instalada
 func CheckGhInstalled() bool {
 	_, err := exec.LookPath("gh")
+	return err == nil
+}
+
+func checkGlabInstalled() bool {
+	_, err := exec.LookPath("glab")
 	return err == nil
 }
 
@@ -22,9 +30,6 @@ func CloneForPush(remoteURL string) (string, error) {
 		return "", fmt.Errorf("error creando dir temporal: %w", err)
 	}
 
-	// Clonar repo completo (no sparse)
-	// Usamos depth 1 para agilizar si es posible, pero para push a veces da problemas si no tenemos historia completa
-	// Para mayor seguridad usamos full clone.
 	if err := runGit(tempDir, "clone", remoteURL, "."); err != nil {
 		os.RemoveAll(tempDir)
 		return "", fmt.Errorf("error clonando repo: %w", err)
@@ -37,7 +42,6 @@ func CloneForPush(remoteURL string) (string, error) {
 func PrepareSkillBranch(repoDir, skillName string) (string, error) {
 	timestamp := time.Now().Format("20060102-150405")
 	sanitizedName := strings.ReplaceAll(strings.ToLower(skillName), " ", "-")
-	// Limpieza extra
 	sanitizedName = strings.Map(func(r rune) rune {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
 			return r
@@ -54,12 +58,8 @@ func PrepareSkillBranch(repoDir, skillName string) (string, error) {
 	return branchName, nil
 }
 
-// FindSkillInRepo busca la ruta relativa del skill dentro del repositorio clonado
-// Esto es necesario porque la info que tenemos puede ser un path relativo que ha cambiado o para validacion
-// Usamos el nombre del skill para buscarlo en caso de duda, o si tenemos el path exacto lo usamos.
-// En este caso, asumimos que 'path' es la ruta relativa desde la raíz del repo donde está el SKILL.md
+// FindSkillInRepo busca la ruta relativa del skill dentro del repositorio clonado.
 func FindSkillInRepo(repoDir, skillName string) (string, error) {
-	// Buscar recursivamente SKILL.md y ver si coincide el nombre
 	var foundPath string
 	err := filepath.Walk(repoDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -84,24 +84,15 @@ func FindSkillInRepo(repoDir, skillName string) (string, error) {
 	return foundPath, nil
 }
 
-// CopySkillFiles copia los contenidos del skill local al directorio del repo clonado
-// localSkillPath: ruta absoluta local donde está instalado el skill
-// repoDir: ruta temp del repo clonado
-// repoSkillPath: ruta relativa dentro del repo donde va el skill
+// CopySkillFiles copia los contenidos del skill local al directorio del repo clonado.
 func CopySkillFiles(repoDir, localSkillPath, repoSkillPath string) error {
 	destDir := filepath.Join(repoDir, repoSkillPath)
 
-	// Opción: borrar contenido previo para asegurar que borrados locales se reflejen
-	// PERO cuidado con borrar archivos ocultos tipo .gitignore si no los tenemos localmente (aunque skills suelen ser autocontenidos)
-	// Vamos a borrar y recrear para ser consistentes con la "versión local es la verdad".
 	os.RemoveAll(destDir)
-
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		return fmt.Errorf("error creando directorio destino: %w", err)
 	}
 
-	// Copiar archivos
-	// Usamos 'cp -r' del sistema
 	cmd := exec.Command("cp", "-r", localSkillPath+"/", destDir)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("error copiando archivos: %w : %s", err, string(output))
@@ -110,46 +101,174 @@ func CopySkillFiles(repoDir, localSkillPath, repoSkillPath string) error {
 	return nil
 }
 
-// PushAndCreatePR hace commit, push y crea la PR
-func PushAndCreatePR(repoDir, branchName, skillName, description string) (string, error) {
-	// Configure git user localmente para este repo si no está config global
-	// Intentamos commit, si falla por falta de config, configuramos dummy
-	// Pero es mejor config dummy siempre si es automatizado?
-	// Si el usuario ya tiene git, usará su user.
-	// Probemos commit directo.
+type gitProvider int
 
-	if err := runGit(repoDir, "add", "."); err != nil {
-		return "", fmt.Errorf("git add falló: %w", err)
+const (
+	providerUnknown gitProvider = iota
+	providerGitHub
+	providerGitLab
+	providerBitbucket
+)
+
+func detectProvider(repoURL string) gitProvider {
+	u := strings.ToLower(repoURL)
+	switch {
+	case strings.Contains(u, "github.com"):
+		return providerGitHub
+	case strings.Contains(u, "gitlab.com"):
+		return providerGitLab
+	case strings.Contains(u, "bitbucket.org"):
+		return providerBitbucket
+	default:
+		return providerUnknown
+	}
+}
+
+func normalizeRepoWebURL(remoteURL string) string {
+	base := ParseGitURL(remoteURL).BaseURL
+	base = strings.TrimSpace(base)
+
+	if strings.HasPrefix(base, "git@") {
+		parts := strings.SplitN(strings.TrimPrefix(base, "git@"), ":", 2)
+		if len(parts) == 2 {
+			return "https://" + parts[0] + "/" + strings.TrimSuffix(strings.Trim(parts[1], "/"), ".git")
+		}
 	}
 
-	// Check si hay cambios
+	if strings.HasPrefix(base, "ssh://") {
+		if u, err := url.Parse(base); err == nil {
+			return "https://" + u.Host + strings.TrimSuffix(u.Path, ".git")
+		}
+	}
+
+	if u, err := url.Parse(base); err == nil {
+		scheme := u.Scheme
+		if scheme == "" {
+			scheme = "https"
+		}
+		path := strings.TrimSuffix(strings.Trim(u.Path, "/"), ".git")
+		if path != "" {
+			path = "/" + path
+		}
+		return scheme + "://" + u.Host + path
+	}
+
+	return strings.TrimSuffix(strings.Trim(base, "/"), ".git")
+}
+
+func getDefaultBranch(repoDir string) string {
+	cmd := exec.Command("git", "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
+	cmd.Dir = repoDir
+	output, err := cmd.Output()
+	if err != nil {
+		return "main"
+	}
+	ref := strings.TrimSpace(string(output))
+	if strings.HasPrefix(ref, "origin/") {
+		return strings.TrimPrefix(ref, "origin/")
+	}
+	if ref != "" {
+		return ref
+	}
+	return "main"
+}
+
+func buildPRURL(provider gitProvider, repoURL, branchName, targetBranch, title string) string {
+	repoWeb := normalizeRepoWebURL(repoURL)
+
+	switch provider {
+	case providerGitHub:
+		return fmt.Sprintf("%s/compare/%s...%s?expand=1", repoWeb, targetBranch, branchName)
+	case providerGitLab:
+		q := url.Values{}
+		q.Set("merge_request[source_branch]", branchName)
+		q.Set("merge_request[target_branch]", targetBranch)
+		q.Set("merge_request[title]", title)
+		return fmt.Sprintf("%s/-/merge_requests/new?%s", repoWeb, q.Encode())
+	case providerBitbucket:
+		q := url.Values{}
+		q.Set("source", branchName)
+		q.Set("dest", targetBranch)
+		return fmt.Sprintf("%s/pull-requests/new?%s", repoWeb, q.Encode())
+	default:
+		return repoWeb
+	}
+}
+
+// PushAndCreatePR hace commit, push y crea PR/MR cuando es posible.
+func PushAndCreatePR(repoDir, remoteURL, branchName, skillName, description string) (string, error) {
+	if err := runGit(repoDir, "add", "."); err != nil {
+		return "", fmt.Errorf("git add fallo: %w", err)
+	}
+
 	if err := runGit(repoDir, "diff", "--staged", "--quiet"); err == nil {
-		return "", fmt.Errorf("no hay cambios para subir (el contenido local es idéntico al remoto)")
+		return "", fmt.Errorf("no hay cambios para subir (el contenido local es identico al remoto)")
 	}
 
 	msg := fmt.Sprintf("feat(%s): update skill content", skillName)
 	if err := runGit(repoDir, "commit", "-m", msg); err != nil {
-		return "", fmt.Errorf("git commit falló: %w", err)
+		return "", fmt.Errorf("git commit fallo: %w", err)
 	}
 
 	if err := runGit(repoDir, "push", "origin", branchName); err != nil {
-		return "", fmt.Errorf("git push falló: %w", err)
+		return "", fmt.Errorf("git push fallo: %w", err)
 	}
 
-	// Crear PR
 	title := fmt.Sprintf("Update skill: %s", skillName)
 	body := fmt.Sprintf("This PR updates the skill '%s'.\n\nAutomatically generated by skli.\n\n%s", skillName, description)
+	targetBranch := getDefaultBranch(repoDir)
+	provider := detectProvider(remoteURL)
+	fallbackURL := buildPRURL(provider, remoteURL, branchName, targetBranch, title)
 
-	// Usamos gh pr create
-	// --head branchName
-	// --base (defecto del repo)
-	cmdArgs := []string{"pr", "create", "--title", title, "--body", body, "--head", branchName}
-	cmd := exec.Command("gh", cmdArgs...)
-	cmd.Dir = repoDir
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("error crando PR con gh: %w : %s", err, string(output))
+	switch provider {
+	case providerGitHub:
+		if CheckGhInstalled() {
+			cmd := exec.Command("gh", "pr", "create", "--title", title, "--body", body, "--head", branchName, "--base", targetBranch)
+			cmd.Dir = repoDir
+			output, err := cmd.CombinedOutput()
+			if err == nil {
+				return strings.TrimSpace(string(output)), nil
+			}
+		}
+	case providerGitLab:
+		if checkGlabInstalled() {
+			cmd := exec.Command("glab", "mr", "create", "--title", title, "--description", body, "--source-branch", branchName, "--target-branch", targetBranch, "--yes")
+			cmd.Dir = repoDir
+			output, err := cmd.CombinedOutput()
+			if err == nil {
+				return strings.TrimSpace(string(output)), nil
+			}
+		}
 	}
 
-	return strings.TrimSpace(string(output)), nil
+	return fallbackURL, nil
+}
+
+// UploadSkill sube un skill local a un repositorio remoto y crea una PR/MR (o devuelve URL fallback).
+func UploadSkill(skill db.InstalledSkill, targetRemoteURL string) (string, error) {
+	tempDir, err := CloneForPush(targetRemoteURL)
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(tempDir)
+
+	branchName, err := PrepareSkillBranch(tempDir, skill.Name)
+	if err != nil {
+		return "", err
+	}
+
+	repoSkillPath := skill.RemotePath
+	foundPath, err := FindSkillInRepo(tempDir, skill.Name)
+	if err == nil {
+		repoSkillPath = foundPath
+	} else {
+		skillFolderName := filepath.Base(skill.Path)
+		repoSkillPath = filepath.Join("skills", skillFolderName)
+	}
+
+	if err := CopySkillFiles(tempDir, skill.Path, repoSkillPath); err != nil {
+		return "", err
+	}
+
+	return PushAndCreatePR(tempDir, targetRemoteURL, branchName, skill.Name, skill.Description)
 }

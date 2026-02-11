@@ -139,7 +139,7 @@ func (d remoteDelegate) Height() int                             { return 1 }
 func (d remoteDelegate) Spacing() int                            { return 0 }
 func (d remoteDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 func (d remoteDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
-	i, ok := item.(list.DefaultItem)
+	i, ok := item.(interface{ Title() string })
 	if !ok {
 		return
 	}

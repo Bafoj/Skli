@@ -2,15 +2,14 @@ package list_view
 
 import (
 	"fmt"
-	"skli/internal/db"
 	"skli/internal/tui/shared"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/lipgloss"
 )
 
-func View(l list.Model, skills []db.InstalledSkill, msg string) string {
-	if len(skills) == 0 {
+func View(l list.Model, skillCount int, msg string) string {
+	if skillCount == 0 {
 		return "\n  No hay skills instalados.\n\n" + shared.HelpStyle.Render("  q: salir")
 	}
 

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 
 	"skli/internal/db"
 	"skli/internal/gitrepo"
+	"skli/internal/skills"
 	"skli/internal/tui/shared"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -27,44 +27,76 @@ const (
 	StateUploading
 )
 
+type Mode int
+
+const (
+	ModeNone   Mode = -1
+	ModeManage Mode = iota
+	ModeRemove
+	ModeUpload
+)
+
 // ManageScreen es el modelo para gestionar skills instalados
 type ManageScreen struct {
 	State         State
+	Mode          Mode
 	List          list.Model
-	Skills        []db.InstalledSkill
+	Skills        []managedSkill
 	ToDelete      *db.InstalledSkill
 	Msg           string // Mensaje de estado/error
-	ConfirmCursor int    // 0 para Sí, 1 para No
+	ConfirmCursor int    // 0 para Si, 1 para No
 	RemoteList    list.Model
 	RemoteInput   textinput.Model
 	SelectedSkill *db.InstalledSkill // Skill seleccionado para subir
 	ConfigRemotes []string           // Remotes configurados
+	TargetRemote  string
 }
 
-// NewManageScreen crea una nueva pantalla de gestión
-func NewManageScreen(remotes []string) (ManageScreen, tea.Cmd) {
+// NewManageScreen crea una nueva pantalla de gestion
+func NewManageScreen(remotes []string, mode Mode) (ManageScreen, tea.Cmd) {
 	lock, _ := db.LoadLockFile()
-	skills := lock.Skills
+	localOnly, _ := skills.ScanLocalUnmanaged(lock.Skills, skills.DefaultRoot)
 
-	// Escanear locales
-	localSkills := scanLocalSkills(skills)
-	skills = append(skills, localSkills...)
-
-	items := make([]list.Item, len(skills))
-	for i, s := range skills {
-		items[i] = InstalledSkillItem{Skill: s}
+	var sourceSkills []db.InstalledSkill
+	switch mode {
+	case ModeUpload:
+		sourceSkills = localOnly
+	default:
+		sourceSkills = append(lock.Skills, localOnly...)
 	}
 
-	delegate := NewManageDelegate()
+	skills := make([]managedSkill, len(sourceSkills))
+	items := make([]list.Item, len(sourceSkills))
+	for i, sk := range sourceSkills {
+		skills[i] = managedSkill{Skill: sk}
+		items[i] = InstalledSkillItem{Skill: &skills[i]}
+	}
+
+	showCheckbox := mode == ModeRemove || mode == ModeUpload
+	delegate := NewManageDelegate(showCheckbox)
 	l := list.New(items, delegate, 60, 20)
-	l.Title = "Gestionar Skills Instalados"
+	l.Title = listTitleForMode(mode)
 	l.SetShowStatusBar(true)
 	l.SetStatusBarItemName("skill", "skills")
 	l.AdditionalShortHelpKeys = func() []key.Binding {
-		return []key.Binding{
-			key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "upload PR")),
-			key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete")),
+		switch mode {
+		case ModeManage:
+			return []key.Binding{
+				key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "upload PR")),
+				key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete")),
+			}
+		case ModeRemove:
+			return []key.Binding{
+				key.NewBinding(key.WithKeys("space"), key.WithHelp("space", "marcar")),
+				key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "eliminar")),
+			}
+		case ModeUpload:
+			return []key.Binding{
+				key.NewBinding(key.WithKeys("space"), key.WithHelp("space", "marcar")),
+				key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "subir")),
+			}
 		}
+		return nil
 	}
 	l.Styles.Title = shared.TitleStyle
 
@@ -73,68 +105,57 @@ func NewManageScreen(remotes []string) (ManageScreen, tea.Cmd) {
 	ti.CharLimit = 156
 	ti.Width = 50
 
+	initialState := StateList
+	var remoteList list.Model
+	if mode == ModeUpload {
+		remoteList = buildUploadRemoteList(remotes)
+		initialState = StateSelectingRemote
+		if len(remotes) == 0 {
+			initialState = StateInputRemote
+			ti.Focus()
+		}
+	}
+
 	return ManageScreen{
-		State:         StateList,
+		State:         initialState,
+		Mode:          mode,
 		List:          l,
 		Skills:        skills,
-		ConfirmCursor: 1, // Por defecto en No por seguridad
+		ConfirmCursor: 1,
+		RemoteList:    remoteList,
 		RemoteInput:   ti,
 		ConfigRemotes: remotes,
 	}, nil
 }
 
 func (s ManageScreen) Init() tea.Cmd {
-	return nil
-}
-
-// scanLocalSkills busca skills en la carpeta local que no estén en el lockfile
-func scanLocalSkills(existingSkills []db.InstalledSkill) []db.InstalledSkill {
-	localSkillsPath := "skills"
-	var newSkills []db.InstalledSkill
-
-	existingMap := make(map[string]bool)
-	for _, s := range existingSkills {
-		existingMap[s.Path] = true
+	if s.State == StateInputRemote {
+		return textinput.Blink
 	}
-
-	filepath.Walk(localSkillsPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil
-		}
-		if !info.IsDir() && info.Name() == "SKILL.md" {
-			dir := filepath.Dir(path)
-			relPath, _ := filepath.Rel(".", dir)
-
-			if !existingMap[relPath] {
-				skillName := filepath.Base(dir)
-				newSkills = append(newSkills, db.InstalledSkill{
-					Name:        skillName + " (Local)",
-					Path:        relPath,
-					Description: "Local skill (unmanaged)",
-					RemoteRepo:  "",
-				})
-			}
-		}
-		return nil
-	})
-	return newSkills
+	return nil
 }
 
 // Item types and delegates
 
-type InstalledSkillItem struct {
-	Skill db.InstalledSkill
+type managedSkill struct {
+	Skill    db.InstalledSkill
+	Selected bool
 }
 
-func (i InstalledSkillItem) Title() string       { return i.Skill.Name }
-func (i InstalledSkillItem) Description() string { return i.Skill.Description }
-func (i InstalledSkillItem) FilterValue() string { return i.Skill.Name }
+type InstalledSkillItem struct {
+	Skill *managedSkill
+}
+
+func (i InstalledSkillItem) Title() string       { return i.Skill.Skill.Name }
+func (i InstalledSkillItem) Description() string { return i.Skill.Skill.Description }
+func (i InstalledSkillItem) FilterValue() string { return i.Skill.Skill.Name }
 
 type manageDelegate struct {
-	styles list.DefaultItemStyles
+	styles       list.DefaultItemStyles
+	showCheckbox bool
 }
 
-func NewManageDelegate() manageDelegate {
+func NewManageDelegate(showCheckbox bool) manageDelegate {
 	styles := list.NewDefaultItemStyles()
 	styles.SelectedTitle = styles.SelectedTitle.
 		Foreground(lipgloss.Color("#FF0000")).
@@ -143,7 +164,7 @@ func NewManageDelegate() manageDelegate {
 		Foreground(lipgloss.Color("#FF0000")).
 		BorderForeground(lipgloss.Color("#FF0000"))
 
-	return manageDelegate{styles: styles}
+	return manageDelegate{styles: styles, showCheckbox: showCheckbox}
 }
 
 func (d manageDelegate) Height() int  { return 2 }
@@ -159,6 +180,13 @@ func (d manageDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 	}
 
 	title := i.Title()
+	if d.showCheckbox {
+		checked := "[ ]"
+		if i.Skill.Selected {
+			checked = "[x]"
+		}
+		title = fmt.Sprintf("%s %s", checked, title)
+	}
 	desc := i.Description()
 	if len(desc) > 80 {
 		desc = desc[:77] + "..."
@@ -212,11 +240,11 @@ func (d remoteDelegate) Height() int                             { return 1 }
 func (d remoteDelegate) Spacing() int                            { return 0 }
 func (d remoteDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 func (d remoteDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
-	i, ok := item.(list.DefaultItem)
+	titled, ok := item.(interface{ Title() string })
 	if !ok {
 		return
 	}
-	title := i.Title()
+	title := titled.Title()
 	if index == m.Index() {
 		fmt.Fprint(w, d.styles.SelectedTitle.Render("➜ "+title))
 	} else {
@@ -224,41 +252,96 @@ func (d remoteDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 	}
 }
 
-type uploadSkillMsg struct {
-	PRURL string
-	Err   error
+type uploadResult struct {
+	SkillName string
+	PRURL     string
+	Err       error
 }
 
-func uploadSkillCmd(skill db.InstalledSkill, targetRemoteURL string) tea.Cmd {
+type uploadSkillsMsg struct {
+	Results []uploadResult
+}
+
+type deleteSkillsMsg struct {
+	Deleted []string
+	Err     error
+}
+
+func uploadSkillsCmd(skills []db.InstalledSkill, targetRemoteURL string) tea.Cmd {
 	return func() tea.Msg {
-		if !gitrepo.CheckGhInstalled() {
-			return uploadSkillMsg{Err: fmt.Errorf("gh CLI no está instalada")}
+		results := make([]uploadResult, 0, len(skills))
+		for _, sk := range skills {
+			prURL, err := gitrepo.UploadSkill(sk, targetRemoteURL)
+			results = append(results, uploadResult{SkillName: sk.Name, PRURL: prURL, Err: err})
 		}
-		tempDir, err := gitrepo.CloneForPush(targetRemoteURL)
-		if err != nil {
-			return uploadSkillMsg{Err: err}
-		}
-		defer os.RemoveAll(tempDir)
-		branchName, err := gitrepo.PrepareSkillBranch(tempDir, skill.Name)
-		if err != nil {
-			return uploadSkillMsg{Err: err}
-		}
-		repoSkillPath := skill.RemotePath
-		foundPath, err := gitrepo.FindSkillInRepo(tempDir, skill.Name)
-		if err == nil {
-			repoSkillPath = foundPath
-		} else {
-			skillFolderName := filepath.Base(skill.Path)
-			repoSkillPath = filepath.Join("skills", skillFolderName)
-		}
-		err = gitrepo.CopySkillFiles(tempDir, skill.Path, repoSkillPath)
-		if err != nil {
-			return uploadSkillMsg{Err: err}
-		}
-		prURL, err := gitrepo.PushAndCreatePR(tempDir, branchName, skill.Name, skill.Description)
-		if err != nil {
-			return uploadSkillMsg{Err: err}
-		}
-		return uploadSkillMsg{PRURL: prURL}
+		return uploadSkillsMsg{Results: results}
 	}
+}
+
+func deleteSkillsCmd(skills []db.InstalledSkill) tea.Cmd {
+	return func() tea.Msg {
+		if len(skills) == 0 {
+			return deleteSkillsMsg{Err: fmt.Errorf("no hay skills seleccionados")}
+		}
+		deleted := make([]string, 0, len(skills))
+		for _, sk := range skills {
+			if sk.Path == "" || sk.Path == "." || sk.Path == "/" {
+				return deleteSkillsMsg{Err: fmt.Errorf("ruta insegura para eliminar: %s", sk.Path)}
+			}
+			if err := os.RemoveAll(sk.Path); err != nil {
+				return deleteSkillsMsg{Err: err}
+			}
+			if err := db.DeleteInstalledSkill(sk.Path); err != nil {
+				return deleteSkillsMsg{Err: err}
+			}
+			deleted = append(deleted, sk.Name)
+		}
+		return deleteSkillsMsg{Deleted: deleted}
+	}
+}
+
+func buildUploadRemoteList(remotes []string) list.Model {
+	items := make([]list.Item, 0, len(remotes)+1)
+	for _, remote := range remotes {
+		items = append(items, remoteItem{url: remote})
+	}
+	items = append(items, customURLItem{})
+
+	delegate := newRemoteDelegate()
+	l := list.New(items, delegate, 60, 14)
+	l.Title = "Paso 1/2: Selecciona repositorio destino"
+	l.SetShowStatusBar(false)
+	l.SetFilteringEnabled(false)
+	l.Styles.Title = shared.TitleStyle
+	return l
+}
+
+func listTitleForMode(mode Mode) string {
+	switch mode {
+	case ModeRemove:
+		return "Eliminar skills locales"
+	case ModeUpload:
+		return "Paso 2/2: Skills locales no sincronizados"
+	default:
+		return "Gestionar Skills Instalados"
+	}
+}
+
+func (s ManageScreen) selectedSkills() []db.InstalledSkill {
+	out := make([]db.InstalledSkill, 0)
+	for _, sk := range s.Skills {
+		if sk.Selected {
+			out = append(out, sk.Skill)
+		}
+	}
+	return out
+}
+
+func (s ManageScreen) toggleSelectedCurrent() ManageScreen {
+	item, ok := s.List.SelectedItem().(InstalledSkillItem)
+	if !ok || item.Skill == nil {
+		return s
+	}
+	item.Skill.Selected = !item.Skill.Selected
+	return s
 }

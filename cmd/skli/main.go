@@ -1,16 +1,15 @@
 package main
 
 import (
-	"flag"
+	"context"
 	"fmt"
 	"os"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/urfave/cli/v3"
 
+	"skli/internal/app"
 	"skli/internal/config"
-	"skli/internal/sync"
-	"skli/internal/tui"
 )
 
 var (
@@ -21,104 +20,139 @@ var (
 )
 
 func main() {
-	syncFlag := flag.Bool("sync", false, "Sincronizar todos los skills instalados desde sus repos de origen")
-	pathFlag := flag.String("path", "skills", "Directorio dentro del repo donde buscar skills")
-	flag.Parse()
-
-	// Cargar configuración global
 	cfg, _ := config.LoadConfig()
+	service := app.NewService(cfg)
 
-	// Manejar comandos
-	if len(os.Args) > 1 {
-		switch os.Args[1] {
-		case "config":
-			runConfig(cfg)
-			return
-		case "sync":
-			runSync()
-			return
-		case "manage":
-			runManage()
-			return
-		}
-	}
-
-	if *syncFlag {
-		runSync()
-		return
-	}
-
-	// Obtener el repo URL de los argumentos posicionales si existe
-	initialURL := ""
-	if args := flag.Args(); len(args) > 0 {
-		initialURL = args[0]
-	}
-
-	// Modo interactivo normal
-	p := tea.NewProgram(tui.NewRootModel(initialURL, *pathFlag, cfg.LocalPath, false, false, cfg.Remotes), tea.WithAltScreen())
-
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("Ocurrió un error: %v", err)
+	if err := buildCLI(service).Run(context.Background(), os.Args); err != nil {
+		fmt.Println(errorStyle.Render(fmt.Sprintf("✘ %v", err)))
 		os.Exit(1)
 	}
 }
 
-func runSync() {
-	// ... (rest of the function)
+func buildCLI(service app.Service) *cli.Command {
+	return &cli.Command{
+		Name:      "skli",
+		Usage:     "gestor de skills",
+		UsageText: "skli [comando] [argumentos]",
+		CommandNotFound: func(ctx context.Context, c *cli.Command, s string) {
+			fmt.Println(errorStyle.Render(fmt.Sprintf("✘ comando desconocido: %s", s)))
+			fmt.Println("Usa --help para ver comandos.")
+		},
+		Commands: []*cli.Command{
+			{
+				Name:      "add",
+				Usage:     "instala skills desde un repo o abre el selector TUI",
+				ArgsUsage: "[git-repo-path]",
+				Action: func(_ context.Context, cmd *cli.Command) error {
+					if cmd.NArg() > 1 {
+						return cli.Exit("uso: skli add [git-repo-path]", 1)
+					}
+					return service.Add(cmd.Args().First())
+				},
+			},
+			{
+				Name:      "rm",
+				Usage:     "elimina skills instalados",
+				ArgsUsage: "[skill-name]",
+				Action: func(_ context.Context, cmd *cli.Command) error {
+					if cmd.NArg() > 1 {
+						return cli.Exit("uso: skli rm [skill-name]", 1)
+					}
+					if cmd.NArg() == 1 {
+						skill, err := service.RemoveByName(cmd.Args().First())
+						if err != nil {
+							return err
+						}
+						fmt.Println(successStyle.Render(fmt.Sprintf("✔ skill eliminado: %s (%s)", skill.Name, skill.Path)))
+						return nil
+					}
+					return service.RemoveTUI()
+				},
+			},
+			{
+				Name:  "sync",
+				Usage: "sincroniza skills instalados con su repo origen",
+				Action: func(_ context.Context, cmd *cli.Command) error {
+					if cmd.NArg() != 0 {
+						return cli.Exit("uso: skli sync", 1)
+					}
+					return renderSync(service)
+				},
+			},
+			{
+				Name:      "upload",
+				Usage:     "sube skills locales a un repo destino",
+				ArgsUsage: "[git-dest-repo-path] [local-skill-path]",
+				Action: func(_ context.Context, cmd *cli.Command) error {
+					if cmd.NArg() != 0 && cmd.NArg() != 2 {
+						return cli.Exit("uso: skli upload [git-dest-repo-path] [local-skill-path]", 1)
+					}
+					if cmd.NArg() == 2 {
+						result, err := service.UploadDirect(cmd.Args().Get(0), cmd.Args().Get(1))
+						if err != nil {
+							return err
+						}
+						fmt.Println(infoStyle.Render(fmt.Sprintf("🔄 Subiendo %s a %s...", result.Skill.Name, cmd.Args().Get(0))))
+						fmt.Println(successStyle.Render("✔ PR creado"))
+						fmt.Println(dimStyle.Render(result.PRURL))
+						return nil
+					}
+					return service.UploadTUI()
+				},
+			},
+			{
+				Name:  "config",
+				Usage: "abre la configuracion de skli",
+				Action: func(_ context.Context, cmd *cli.Command) error {
+					if cmd.NArg() != 0 {
+						return cli.Exit("uso: skli config", 1)
+					}
+					return service.ConfigTUI()
+				},
+			},
+		},
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			if cmd.NArg() == 0 {
+				cli.ShowRootCommandHelp(cmd)
+				return nil
+			}
+			return cli.Exit("comando desconocido. Usa --help para ver comandos.", 1)
+		},
+	}
+}
+
+func renderSync(service app.Service) error {
 	fmt.Println(infoStyle.Render("🔄 Sincronizando skills..."))
 	fmt.Println()
 
-	results, err := sync.SyncAllSkills()
+	summary, err := service.SyncAll()
 	if err != nil {
-		fmt.Println(errorStyle.Render(fmt.Sprintf("✘ Error sincronizando: %v", err)))
-		os.Exit(1)
+		return err
 	}
 
-	if len(results) == 0 {
-		fmt.Println(infoStyle.Render("ℹ No hay skills instalados para sincronizar (skli.lock vacío)."))
-		fmt.Println(infoStyle.Render("  Usa 'skli' para instalar skills primero."))
-		return
+	if len(summary.Results) == 0 {
+		fmt.Println(infoStyle.Render("ℹ No hay skills instalados para sincronizar (skli.lock vacio)."))
+		fmt.Println(infoStyle.Render("  Usa 'skli add' para instalar skills primero."))
+		return nil
 	}
 
-	updated := 0
-	skipped := 0
-	errors := 0
-
-	for _, r := range results {
+	for _, r := range summary.Results {
 		if r.Error != nil {
 			fmt.Println(errorStyle.Render(fmt.Sprintf("  ✘ %s: %v", r.SkillName, r.Error)))
-			errors++
 		} else if r.Updated {
 			fmt.Println(successStyle.Render(fmt.Sprintf("  ✔ %s actualizado", r.SkillName)))
-			updated++
 		} else if r.Skipped {
 			fmt.Println(dimStyle.Render(fmt.Sprintf("  ○ %s sin cambios", r.SkillName)))
-			skipped++
 		}
 	}
 
 	fmt.Println()
-	if errors > 0 {
-		fmt.Println(errorStyle.Render(fmt.Sprintf("Completado con %d errores. %d actualizados, %d sin cambios.", errors, updated, skipped)))
-	} else if updated == 0 {
-		fmt.Println(successStyle.Render(fmt.Sprintf("✔ Todos los skills están actualizados (%d verificados).", skipped)))
+	if summary.Errors > 0 {
+		fmt.Println(errorStyle.Render(fmt.Sprintf("Completado con %d errores. %d actualizados, %d sin cambios.", summary.Errors, summary.Updated, summary.Skipped)))
+	} else if summary.Updated == 0 {
+		fmt.Println(successStyle.Render(fmt.Sprintf("✔ Todos los skills estan actualizados (%d verificados).", summary.Skipped)))
 	} else {
-		fmt.Println(successStyle.Render(fmt.Sprintf("✔ %d skills actualizados, %d sin cambios.", updated, skipped)))
+		fmt.Println(successStyle.Render(fmt.Sprintf("✔ %d skills actualizados, %d sin cambios.", summary.Updated, summary.Skipped)))
 	}
-}
-
-func runConfig(cfg config.Config) {
-	p := tea.NewProgram(tui.NewRootModel("", "skills", cfg.LocalPath, true, false, cfg.Remotes), tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("Ocurrió un error en la configuración: %v", err)
-		os.Exit(1)
-	}
-}
-
-func runManage() {
-	p := tea.NewProgram(tui.NewRootModel("", "skills", "", false, true, nil), tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("Ocurrió un error en la gestión: %v", err)
-		os.Exit(1)
-	}
+	return nil
 }

@@ -1,12 +1,10 @@
-Hacer un --help
-Internacionalizar idiomas
-Meter soporte para configuración por defecto permitiendo agregar globalmente remotes
-Crear fichero config.js en el root del usuario ./skli/config.js 
-Meter búsqueda por texto en el listado de skills - done
-Meter comando para eliminar skills skli rm skill_name o si está vacío mostrar selector en listado de skills instalados - done
-Mejorar parser url git repos, si es tipo http sanitize url para que funcione con git clone -done
-Permitir indicar el remote en el comando skli add remote_name url o si no tiene el remote_name mostrar selector en listado de remotes - done
-Mejorar el explorador de skills en el remote, hacer busqueda recursiva - done
-Permitir clonar partiendo de la url específica de un repo de git - done
-Meter animación durante la sincronización y descarga de un skill - done
-Meter comando para subir un skill a un remote creando una pull request - done
+Vamos a hacer un refactor del cli:
+
+- [x] agregar el --help para mostrar todos los comandos disponibles
+- [x] Mover el agregar skills a 'skli add [git-repo-path]' en el que se le puede pasar opcionalmente el git repo path si no se muestra el tui con el input
+- [x] La eliminación de skills se hará con 'skli rm [skill-name]'  si no se da el name se muestra el listado de skills en la carpeta de trabajo local y checkbox para ir marcando que skills quitar
+- [x] skli sync 'descarga los skills que han cambiado
+- [x] skli upload [git-dest-repo-path] [local-skill-path] Si no se indica se debe gestionarse desde el tui en dos pasos, el primero indicar el repo y el segundo mostrará un listado de todos los skills locales no sincronizados. 
+- [x] skli config. Se queda igual mostrando el listado de origins y el de carpetas para guardar los skills
+
+Ve marcando con checks cuando vayas agregando cada funcionalidad

@@ -9,30 +9,30 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// RootModel es el modelo principal que actúa como router
+// RootModel es el modelo principal que actua como router
 type RootModel struct {
 	activeScreen    tea.Model
 	configLocalPath string
 	remotes         []string
 	skillsRoot      string
+	manageMode      manage.Mode
 	quitting        bool
 	windowWidth     int
 	windowHeight    int
 }
 
 // NewRootModel crea el modelo principal
-func NewRootModel(initialURL, skillsRoot, configLocalPath string, configMode, manageMode bool, remotes []string) RootModel {
+func NewRootModel(initialURL, skillsRoot, configLocalPath string, configMode bool, manageMode manage.Mode, remotes []string) RootModel {
 	var activeScreen tea.Model
 
-	if manageMode {
-		activeScreen, _ = manage.NewManageScreen(remotes)
-	} else if configMode {
+	switch {
+	case manageMode != manage.ModeNone:
+		activeScreen, _ = manage.NewManageScreen(remotes, manageMode)
+	case configMode:
 		activeScreen = config.NewConfigScreen(configLocalPath, remotes)
-	} else if initialURL != "" {
+	case initialURL != "":
 		activeScreen = scanning.NewScanningScreen(initialURL, skillsRoot)
-	} else if len(remotes) > 0 {
-		activeScreen = remote.NewRemoteScreen(remotes, configLocalPath, false)
-	} else {
+	default:
 		activeScreen = remote.NewRemoteScreen(remotes, configLocalPath, false)
 	}
 
@@ -41,6 +41,7 @@ func NewRootModel(initialURL, skillsRoot, configLocalPath string, configMode, ma
 		configLocalPath: configLocalPath,
 		remotes:         remotes,
 		skillsRoot:      skillsRoot,
+		manageMode:      manageMode,
 	}
 }
 

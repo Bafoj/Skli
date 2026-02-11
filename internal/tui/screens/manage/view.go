@@ -11,7 +11,7 @@ import (
 func (s ManageScreen) View() string {
 	switch s.State {
 	case StateList:
-		return list_view.View(s.List, s.Skills, s.Msg)
+		return list_view.View(s.List, len(s.Skills), s.Msg)
 	case StateConfirm:
 		return confirm.View(s.ToDelete, s.ConfirmCursor)
 	case StateSelectingRemote:

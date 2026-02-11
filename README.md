@@ -29,39 +29,64 @@ powershell -c "irm https://bitbucket.org/cuatroochenta/skli/raw/main/scripts/ins
 
 ## 🛠 Usage
 
-### 1. Basic Interactive Mode
-Simply run `skli` to open the interactive TUI. From here you can explore remotes and install skills.
+### 1. Add skills (interactive)
+Use `add` to install skills. Without args, it opens the interactive TUI.
 
 ```bash
-skli
+skli add
 ```
 
-### 2. Install from a specific URL
-You can pass a Git repository URL directly to start exploring its skills:
+### 2. Add from a specific URL
+Pass a Git repository URL directly:
 
 ```bash
-skli https://github.com/user/my-skills-repo
+skli add https://github.com/user/my-skills-repo
 ```
 
-### 3. Synchronize installed skills
+### 3. Remove skills
+Delete one skill by name:
+
+```bash
+skli rm my-skill
+```
+
+Or run without args for a checkbox TUI:
+
+```bash
+skli rm
+```
+
+### 4. Synchronize installed skills
 To update all your installed skills from their source repositories:
 
 ```bash
 skli sync
 ```
 
-### 4. Manage installed skills
-To list and delete your currently installed skills:
+### 5. Upload local skills
+Upload directly:
 
 ```bash
-skli manage
+skli upload https://github.com/user/repo.git ./skills/my-skill
 ```
 
-### 5. Configuration
+Or run without args for the 2-step TUI flow:
+
+```bash
+skli upload
+```
+
+### 6. Configuration
 To configure global settings and default remotes:
 
 ```bash
 skli config
+```
+
+### 7. Help
+
+```bash
+skli --help
 ```
 
 ---

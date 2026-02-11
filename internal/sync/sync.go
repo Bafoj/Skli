@@ -18,6 +18,13 @@ var (
 	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Bold(true)
 	infoStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
 	dimStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666"))
+
+	getRemoteHashFn    = gitrepo.GetRemoteHash
+	cloneAndScanFn     = gitrepo.CloneAndScan
+	saveInstalledFn    = db.SaveInstalledSkill
+	removeAllFn        = os.RemoveAll
+	statFn             = os.Stat
+	copyDirFn          = copyDir
 )
 
 // SyncResult contiene el resultado de la sincronización
@@ -101,7 +108,7 @@ func syncRepo(repoURL string, skills []db.InstalledSkill) []SyncResult {
 	}
 
 	// 1. Primero verificar el hash remoto SIN clonar
-	remoteHash, err := gitrepo.GetRemoteHash(repoURL)
+	remoteHash, err := getRemoteHashFn(repoURL)
 	if err != nil {
 		for _, s := range skills {
 			results = append(results, SyncResult{
@@ -122,7 +129,7 @@ func syncRepo(repoURL string, skills []db.InstalledSkill) []SyncResult {
 		}
 
 		// Verificar si la carpeta del skill existe localmente
-		if _, err := os.Stat(s.Path); os.IsNotExist(err) {
+		if _, err := statFn(s.Path); os.IsNotExist(err) {
 			allUpToDate = false
 			break
 		}
@@ -140,7 +147,7 @@ func syncRepo(repoURL string, skills []db.InstalledSkill) []SyncResult {
 	}
 
 	// 4. Solo si hay cambios, clonar el repo
-	scanRes, err := gitrepo.CloneAndScan(repoURL, skillsPath)
+	scanRes, err := cloneAndScanFn(repoURL, skillsPath)
 	if err != nil {
 		for _, s := range skills {
 			results = append(results, SyncResult{
@@ -150,7 +157,7 @@ func syncRepo(repoURL string, skills []db.InstalledSkill) []SyncResult {
 		}
 		return results
 	}
-	defer os.RemoveAll(scanRes.TempDir)
+	defer removeAllFn(scanRes.TempDir)
 
 	// Usar el path detectado para mayor consistencia
 	skillsPath = scanRes.SkillsPath
@@ -174,7 +181,7 @@ func syncRepo(repoURL string, skills []db.InstalledSkill) []SyncResult {
 
 		// Si el hash no ha cambiado Y el archivo existe, saltar
 		if installed.CommitHash == scanRes.CommitHash {
-			if _, err := os.Stat(installed.Path); err == nil {
+			if _, err := statFn(installed.Path); err == nil {
 				results = append(results, SyncResult{
 					SkillName: installed.Name,
 					Skipped:   true,
@@ -196,10 +203,10 @@ func syncRepo(repoURL string, skills []db.InstalledSkill) []SyncResult {
 		dest := installed.Path
 
 		// Eliminar la versión anterior
-		os.RemoveAll(dest)
+		removeAllFn(dest)
 
 		// Copiar la nueva versión
-		if err := copyDir(src, dest); err != nil {
+		if err := copyDirFn(src, dest); err != nil {
 			results = append(results, SyncResult{
 				SkillName: installed.Name,
 				Error:     fmt.Errorf("error copiando: %w", err),
@@ -208,7 +215,7 @@ func syncRepo(repoURL string, skills []db.InstalledSkill) []SyncResult {
 		}
 
 		// Actualizar metadatos en el lock file con el nuevo hash y el mismo path base
-		db.SaveInstalledSkill(db.InstalledSkill{
+		saveInstalledFn(db.InstalledSkill{
 			Name:        remote.Name,
 			Description: remote.Description,
 			Path:        installed.Path,
