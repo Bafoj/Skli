@@ -12,6 +12,37 @@ import (
 
 const DefaultRoot = "skills"
 
+// IsSafeDeletePath valida que el path a eliminar sea un subdirectorio del root de skills.
+func IsSafeDeletePath(pathToDelete, skillsRoot string) error {
+	pathToDelete = filepath.Clean(strings.TrimSpace(pathToDelete))
+	if pathToDelete == "" || pathToDelete == "." || pathToDelete == string(os.PathSeparator) {
+		return fmt.Errorf("ruta insegura para eliminar: %s", pathToDelete)
+	}
+
+	if strings.TrimSpace(skillsRoot) == "" {
+		skillsRoot = DefaultRoot
+	}
+	skillsRoot = filepath.Clean(skillsRoot)
+
+	absRoot, err := filepath.Abs(skillsRoot)
+	if err != nil {
+		return fmt.Errorf("no se pudo resolver el root de skills: %w", err)
+	}
+	absTarget, err := filepath.Abs(pathToDelete)
+	if err != nil {
+		return fmt.Errorf("no se pudo resolver la ruta a eliminar: %w", err)
+	}
+
+	rel, err := filepath.Rel(absRoot, absTarget)
+	if err != nil {
+		return fmt.Errorf("no se pudo validar la ruta a eliminar: %w", err)
+	}
+	if rel == "." || rel == "" || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return fmt.Errorf("ruta fuera del root de skills: %s", pathToDelete)
+	}
+	return nil
+}
+
 // CollectAll combina skills del lockfile y skills locales no gestionados.
 func CollectAll(skillsRoot string) ([]db.InstalledSkill, error) {
 	lock, err := db.LoadLockFile()
@@ -49,6 +80,10 @@ func ScanLocalUnmanaged(existing []db.InstalledSkill, skillsRoot string) ([]db.I
 		}
 		if !info.IsDir() && info.Name() == "SKILL.md" {
 			dir := filepath.Dir(path)
+			rootClean := filepath.Clean(skillsRoot)
+			if filepath.Clean(dir) == rootClean {
+				return nil
+			}
 			relPath, _ := filepath.Rel(".", dir)
 			if !existingMap[relPath] {
 				newSkills = append(newSkills, db.InstalledSkill{
@@ -99,8 +134,8 @@ func FindByName(name, skillsRoot string) (db.InstalledSkill, error) {
 
 // Delete elimina el directorio del skill y su entrada en el lockfile.
 func Delete(skill db.InstalledSkill) error {
-	if skill.Path == "" || skill.Path == "." || skill.Path == "/" {
-		return fmt.Errorf("ruta insegura para eliminar")
+	if err := IsSafeDeletePath(skill.Path, DefaultRoot); err != nil {
+		return err
 	}
 
 	if err := os.RemoveAll(skill.Path); err != nil {

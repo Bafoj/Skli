@@ -6,6 +6,7 @@ import (
 
 	"skli/internal/db"
 	"skli/internal/gitrepo"
+	skillsvc "skli/internal/skills"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -25,10 +26,10 @@ type DeleteSkillsMsg struct {
 	Err     error
 }
 
-func UploadSkillsCmd(skills []db.InstalledSkill, targetRemoteURL string) tea.Cmd {
+func UploadSkillsCmd(selectedSkills []db.InstalledSkill, targetRemoteURL string) tea.Cmd {
 	return func() tea.Msg {
-		results := make([]UploadResult, 0, len(skills))
-		for _, sk := range skills {
+		results := make([]UploadResult, 0, len(selectedSkills))
+		for _, sk := range selectedSkills {
 			prURL, err := gitrepo.UploadSkill(sk, targetRemoteURL)
 			results = append(results, UploadResult{SkillName: sk.Name, PRURL: prURL, Err: err})
 		}
@@ -36,15 +37,15 @@ func UploadSkillsCmd(skills []db.InstalledSkill, targetRemoteURL string) tea.Cmd
 	}
 }
 
-func DeleteSkillsCmd(skills []db.InstalledSkill) tea.Cmd {
+func DeleteSkillsCmd(selectedSkills []db.InstalledSkill) tea.Cmd {
 	return func() tea.Msg {
-		if len(skills) == 0 {
+		if len(selectedSkills) == 0 {
 			return DeleteSkillsMsg{Err: fmt.Errorf("no hay skills seleccionados")}
 		}
-		deleted := make([]string, 0, len(skills))
-		for _, sk := range skills {
-			if sk.Path == "" || sk.Path == "." || sk.Path == "/" {
-				return DeleteSkillsMsg{Err: fmt.Errorf("ruta insegura para eliminar: %s", sk.Path)}
+		deleted := make([]string, 0, len(selectedSkills))
+		for _, sk := range selectedSkills {
+			if err := skillsvc.IsSafeDeletePath(sk.Path, skillsvc.DefaultRoot); err != nil {
+				return DeleteSkillsMsg{Err: err}
 			}
 			if err := os.RemoveAll(sk.Path); err != nil {
 				return DeleteSkillsMsg{Err: err}

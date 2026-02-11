@@ -1,6 +1,7 @@
 package manage
 
 import (
+	"fmt"
 	"skli/internal/db"
 	"skli/internal/skills"
 	"skli/internal/tui/screens/manage/delegates"
@@ -29,6 +30,7 @@ const (
 	ModeManage Mode = iota
 	ModeRemove
 	ModeUpload
+	ModeList
 )
 
 // ManageScreen es el modelo para gestionar skills instalados
@@ -51,6 +53,10 @@ type ManageScreen struct {
 func NewManageScreen(remotes []string, mode Mode) (ManageScreen, tea.Cmd) {
 	lock, _ := db.LoadLockFile()
 	localOnly, _ := skills.ScanLocalUnmanaged(lock.Skills, skills.DefaultRoot)
+	managedByPath := make(map[string]bool, len(lock.Skills))
+	for _, sk := range lock.Skills {
+		managedByPath[sk.Path] = true
+	}
 
 	var sourceSkills []db.InstalledSkill
 	switch mode {
@@ -63,7 +69,15 @@ func NewManageScreen(remotes []string, mode Mode) (ManageScreen, tea.Cmd) {
 	skills := make([]managedSkill, len(sourceSkills))
 	items := make([]list.Item, len(sourceSkills))
 	for i, sk := range sourceSkills {
-		skills[i] = managedSkill{Skill: sk}
+		displaySkill := sk
+		if mode == ModeList {
+			label := "local"
+			if managedByPath[sk.Path] {
+				label = "instalada"
+			}
+			displaySkill.Description = fmt.Sprintf("[%s] %s", label, sk.Path)
+		}
+		skills[i] = managedSkill{Skill: displaySkill}
 		items[i] = InstalledSkillItem{Skill: &skills[i]}
 	}
 
@@ -89,6 +103,10 @@ func NewManageScreen(remotes []string, mode Mode) (ManageScreen, tea.Cmd) {
 			return []key.Binding{
 				key.NewBinding(key.WithKeys("space"), key.WithHelp("space", "marcar")),
 				key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "subir")),
+			}
+		case ModeList:
+			return []key.Binding{
+				key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "salir")),
 			}
 		}
 		return nil
@@ -188,6 +206,8 @@ func listTitleForMode(mode Mode) string {
 		return "Eliminar skills locales"
 	case ModeUpload:
 		return "Paso 2/2: Skills locales no sincronizados"
+	case ModeList:
+		return "Skills locales e instaladas"
 	default:
 		return "Gestionar Skills Instalados"
 	}

@@ -1,4 +1,4 @@
-last_updated = 2026-02-11T10:52:04.843373+01:00
+last_updated = 2026-02-11T10:57:35.316783+01:00
 
 [[skills]]
   name = "skill-creator"
@@ -10,3 +10,36 @@ last_updated = 2026-02-11T10:52:04.843373+01:00
   commit_hash = "4ab6e0fd99c6667163bc34173e3ed3a3fed75ebc"
   installed_at = 2026-02-09T17:16:51.359976+01:00
   updated_at = 2026-02-11T10:52:04.843372+01:00
+
+[[skills]]
+  name = "linear"
+  description = "Manage issues, projects & team workflows in Linear. Use when the user wants to read, create or updates tickets in Linear."
+  path = ".antigravity/skills/linear"
+  remote_repo = "https://github.com/openai/skills/tree/main/skills"
+  remote_root = "skills"
+  remote_path = ".curated/linear"
+  commit_hash = "4ab6e0fd99c6667163bc34173e3ed3a3fed75ebc"
+  installed_at = 2026-02-11T10:57:35.311012+01:00
+  updated_at = 2026-02-11T10:57:35.311012+01:00
+
+[[skills]]
+  name = "netlify-deploy"
+  description = "Deploy web projects to Netlify using the Netlify CLI (`npx netlify`). Use when the user asks to deploy, host, publish, or link a site/repo on Netlify, including preview and production deploys."
+  path = ".antigravity/skills/netlify-deploy"
+  remote_repo = "https://github.com/openai/skills/tree/main/skills"
+  remote_root = "skills"
+  remote_path = ".curated/netlify-deploy"
+  commit_hash = "4ab6e0fd99c6667163bc34173e3ed3a3fed75ebc"
+  installed_at = 2026-02-11T10:57:35.313905+01:00
+  updated_at = 2026-02-11T10:57:35.313905+01:00
+
+[[skills]]
+  name = "notion-knowledge-capture"
+  description = "Capture conversations and decisions into structured Notion pages; use when turning chats/notes into wiki entries, how-tos, decisions, or FAQs with proper linking."
+  path = ".antigravity/skills/notion-knowledge-capture"
+  remote_repo = "https://github.com/openai/skills/tree/main/skills"
+  remote_root = "skills"
+  remote_path = ".curated/notion-knowledge-capture"
+  commit_hash = "4ab6e0fd99c6667163bc34173e3ed3a3fed75ebc"
+  installed_at = 2026-02-11T10:57:35.31678+01:00
+  updated_at = 2026-02-11T10:57:35.31678+01:00

@@ -48,6 +48,12 @@ func (s ManageScreen) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch s.Mode {
+		case ModeList:
+			switch msg.String() {
+			case "esc", "q":
+				return s, tea.Quit
+			}
+
 		case ModeRemove:
 			switch msg.String() {
 			case " ":

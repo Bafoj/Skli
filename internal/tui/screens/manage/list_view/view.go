@@ -10,7 +10,7 @@ import (
 
 func View(l list.Model, skillCount int, msg string) string {
 	if skillCount == 0 {
-		return "\n  No hay skills instalados.\n\n" + shared.HelpStyle.Render("  q: salir")
+		return "\n  No hay skills para mostrar.\n\n" + shared.HelpStyle.Render("  q: salir")
 	}
 
 	if msg != "" {

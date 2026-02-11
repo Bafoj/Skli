@@ -33,6 +33,10 @@ func (s Service) UploadTUI() error {
 	return s.runTUI("", false, manage.ModeUpload)
 }
 
+func (s Service) ListTUI() error {
+	return s.runTUI("", false, manage.ModeList)
+}
+
 func (s Service) ConfigTUI() error {
 	return s.runTUI("", true, manage.ModeNone)
 }
@@ -70,6 +74,12 @@ type SyncSummary struct {
 	Errors  int
 }
 
+type ListedSkill struct {
+	Skill     db.InstalledSkill
+	Managed   bool
+	LocalOnly bool
+}
+
 func (s Service) SyncAll() (SyncSummary, error) {
 	results, err := sklisync.SyncAllSkills()
 	if err != nil {
@@ -92,6 +102,28 @@ func (s Service) SyncAll() (SyncSummary, error) {
 	}
 
 	return summary, nil
+}
+
+func (s Service) ListSkills() ([]ListedSkill, error) {
+	lock, err := db.LoadLockFile()
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]ListedSkill, 0, len(lock.Skills))
+	for _, sk := range lock.Skills {
+		out = append(out, ListedSkill{Skill: sk, Managed: true})
+	}
+
+	localOnly, err := skills.ScanLocalUnmanaged(lock.Skills, skills.DefaultRoot)
+	if err != nil {
+		return nil, err
+	}
+	for _, sk := range localOnly {
+		out = append(out, ListedSkill{Skill: sk, LocalOnly: true})
+	}
+
+	return out, nil
 }
 
 func (s Service) runTUI(initialURL string, configMode bool, manageMode manage.Mode) error {

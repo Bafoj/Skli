@@ -80,6 +80,16 @@ func buildCLI(service app.Service) *cli.Command {
 				},
 			},
 			{
+				Name:  "list",
+				Usage: "lista skills instaladas y skills locales detectadas en ./skills",
+				Action: func(_ context.Context, cmd *cli.Command) error {
+					if cmd.NArg() != 0 {
+						return cli.Exit("uso: skli list", 1)
+					}
+					return service.ListTUI()
+				},
+			},
+			{
 				Name:      "upload",
 				Usage:     "sube skills locales a un repo destino",
 				ArgsUsage: "[git-dest-repo-path] [local-skill-path]",
