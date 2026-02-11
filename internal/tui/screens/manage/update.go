@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"skli/internal/db"
+	"skli/internal/tui/screens/manage/commands"
+	"skli/internal/tui/screens/manage/delegates"
 	"skli/internal/tui/shared"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -34,7 +36,7 @@ func (s ManageScreen) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 		s.List.SetSize(msg.Width, msg.Height-4)
 		return s, nil
 
-	case deleteSkillsMsg:
+	case commands.DeleteSkillsMsg:
 		if msg.Err != nil {
 			s.Msg = fmt.Sprintf("Error: %v", msg.Err)
 			return s, nil
@@ -57,7 +59,7 @@ func (s ManageScreen) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 					s.Msg = "Marca al menos un skill para eliminar"
 					return s, nil
 				}
-				return s, deleteSkillsCmd(selected)
+				return s, commands.DeleteSkillsCmd(selected)
 			case "esc", "q":
 				return s, tea.Quit
 			}
@@ -75,7 +77,7 @@ func (s ManageScreen) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				s.State = StateUploading
 				s.Msg = fmt.Sprintf("Subiendo %d skill(s) a %s...", len(selected), s.TargetRemote)
-				return s, uploadSkillsCmd(selected, s.TargetRemote)
+				return s, commands.UploadSkillsCmd(selected, s.TargetRemote)
 			case "esc":
 				s.State = StateSelectingRemote
 				return s, nil
@@ -118,7 +120,7 @@ func (s ManageScreen) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					items = append(items, customURLItem{})
 
-					delegate := newRemoteDelegate()
+					delegate := delegates.NewRemoteDelegate()
 					l := list.New(items, delegate, 60, 14)
 					l.Title = "Selecciona repositorio destino"
 					l.SetShowStatusBar(false)
@@ -168,7 +170,7 @@ func (s ManageScreen) updateSelectingRemote(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				s.State = StateUploading
 				s.Msg = fmt.Sprintf("Iniciando subida de '%s' a %s...", s.SelectedSkill.Name, item.url)
-				return s, uploadSkillsCmd([]db.InstalledSkill{*s.SelectedSkill}, item.url)
+				return s, commands.UploadSkillsCmd([]db.InstalledSkill{*s.SelectedSkill}, item.url)
 			case customURLItem:
 				s.State = StateInputRemote
 				s.RemoteInput.Focus()
@@ -204,7 +206,7 @@ func (s ManageScreen) updateInputRemote(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				s.State = StateUploading
 				s.Msg = fmt.Sprintf("Iniciando subida de '%s' a %s...", s.SelectedSkill.Name, url)
-				return s, uploadSkillsCmd([]db.InstalledSkill{*s.SelectedSkill}, url)
+				return s, commands.UploadSkillsCmd([]db.InstalledSkill{*s.SelectedSkill}, url)
 			}
 		}
 	}
@@ -226,7 +228,7 @@ func (s ManageScreen) updateConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "y", "Y":
 			s.ConfirmCursor = 0
 			if s.ToDelete != nil {
-				return s, deleteSkillsCmd([]db.InstalledSkill{*s.ToDelete})
+				return s, commands.DeleteSkillsCmd([]db.InstalledSkill{*s.ToDelete})
 			}
 		case "n", "N", "esc":
 			s.State = StateList
@@ -235,7 +237,7 @@ func (s ManageScreen) updateConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if s.ConfirmCursor == 0 {
 				if s.ToDelete != nil {
-					return s, deleteSkillsCmd([]db.InstalledSkill{*s.ToDelete})
+					return s, commands.DeleteSkillsCmd([]db.InstalledSkill{*s.ToDelete})
 				}
 			} else {
 				s.State = StateList
@@ -243,7 +245,7 @@ func (s ManageScreen) updateConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return s, nil
 			}
 		}
-	case deleteSkillsMsg:
+	case commands.DeleteSkillsMsg:
 		if msg.Err != nil {
 			s.State = StateList
 			s.ToDelete = nil
@@ -259,7 +261,7 @@ func (s ManageScreen) updateConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (s ManageScreen) updateUploading(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case uploadSkillsMsg:
+	case commands.UploadSkillsMsg:
 		var lines []string
 		okCount := 0
 		for _, result := range msg.Results {

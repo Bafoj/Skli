@@ -1,89 +1,12 @@
-last_updated = 2026-02-10T15:57:57.983538+01:00
-
-[[skills]]
-  name = "build-things"
-  description = "Generate a Codex Super Bowl merch redemption URL (tokenized) and open it. Use when a user asks to redeem Super Bowl/Codex merch, needs a redemption token, or wants the merch redemption link."
-  path = ".antigravity/skills"
-  remote_repo = "https://github.com/openai/skills/tree/main/skills/.experimental/build-things"
-  remote_root = "skills"
-  remote_path = "."
-  commit_hash = "7fc1e3f3b1778a0ce14bc3ee6afc223d5b997ca2"
-  installed_at = 2026-02-09T16:54:32.723476+01:00
-  updated_at = 2026-02-09T16:56:11.812782+01:00
+last_updated = 2026-02-11T10:52:04.843373+01:00
 
 [[skills]]
   name = "skill-creator"
   description = "Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Codex's capabilities with specialized knowledge, workflows, or tool integrations."
   path = ".antigravity/skills/skill-creator"
-  remote_repo = "https://github.com/openai/skills/tree/main/skills"
+  remote_repo = "https://github.com/openai/skills/tree/main"
   remote_root = "skills"
   remote_path = ".system/skill-creator"
   commit_hash = "4ab6e0fd99c6667163bc34173e3ed3a3fed75ebc"
   installed_at = 2026-02-09T17:16:51.359976+01:00
-  updated_at = 2026-02-10T13:14:29.179109+01:00
-
-[[skills]]
-  name = "skill-installer"
-  description = "Install Codex skills into $CODEX_HOME/skills from a curated list or a GitHub repo path. Use when a user asks to list installable skills, install a curated skill, or install a skill from another repo (including private repos)."
-  path = ".antigravity/skills/skill-installer"
-  remote_repo = "https://github.com/openai/skills/tree/main/skills/.system"
-  remote_root = "skills/.system"
-  remote_path = "skill-installer"
-  commit_hash = "7fc1e3f3b1778a0ce14bc3ee6afc223d5b997ca2"
-  installed_at = 2026-02-09T17:16:51.36454+01:00
-  updated_at = 2026-02-09T18:29:45.762453+01:00
-
-[[skills]]
-  name = "figma"
-  description = "Use the Figma MCP server to fetch design context, screenshots, variables, and assets from Figma, and to translate Figma nodes into production code. Trigger when a task involves Figma URLs, node IDs, design-to-code implementation, or Figma MCP setup and troubleshooting."
-  path = ".antigravity/skills/figma"
-  remote_repo = "https://github.com/openai/skills/tree/main/skills"
-  remote_root = "skills"
-  remote_path = ".curated/figma"
-  commit_hash = "7fc1e3f3b1778a0ce14bc3ee6afc223d5b997ca2"
-  installed_at = 2026-02-09T17:32:09.043441+01:00
-  updated_at = 2026-02-09T18:29:45.811262+01:00
-
-[[skills]]
-  name = "\"figma-implement-design\""
-  description = "\"Translate Figma nodes into production-ready code with 1:1 visual fidelity using the Figma MCP workflow (design context, screenshots, assets, and project-convention translation). Trigger when the user provides Figma URLs or node IDs, or asks to implement designs or components that must match Figma specs. Requires a working Figma MCP server connection.\""
-  path = ".antigravity/skills/figma-implement-design"
-  remote_repo = "https://github.com/openai/skills/tree/main/skills"
-  remote_root = "skills"
-  remote_path = ".curated/figma-implement-design"
-  commit_hash = "7fc1e3f3b1778a0ce14bc3ee6afc223d5b997ca2"
-  installed_at = 2026-02-09T18:28:20.732525+01:00
-  updated_at = 2026-02-09T18:29:45.81909+01:00
-
-[[skills]]
-  name = "cloudflare-deploy"
-  description = "Deploy applications and infrastructure to Cloudflare using Workers, Pages, and related platform services. Use when the user asks to deploy, host, publish, or set up a project on Cloudflare."
-  path = ".antigravity/skills/cloudflare-deploy"
-  remote_repo = "https://github.com/openai/skills/tree/main/skills"
-  remote_root = "skills"
-  remote_path = ".curated/cloudflare-deploy"
-  commit_hash = "4ab6e0fd99c6667163bc34173e3ed3a3fed75ebc"
-  installed_at = 2026-02-10T13:14:29.170587+01:00
-  updated_at = 2026-02-10T13:14:29.170587+01:00
-
-[[skills]]
-  name = "gh-address-comments"
-  description = "Help address review/issue comments on the open GitHub PR for the current branch using gh CLI; verify gh auth first and prompt the user to authenticate if not logged in."
-  path = ".antigravity/skills/gh-address-comments"
-  remote_repo = "https://github.com/openai/skills/tree/main/skills"
-  remote_root = "skills"
-  remote_path = ".curated/gh-address-comments"
-  commit_hash = "4ab6e0fd99c6667163bc34173e3ed3a3fed75ebc"
-  installed_at = 2026-02-10T13:14:29.1733+01:00
-  updated_at = 2026-02-10T13:14:29.1733+01:00
-
-[[skills]]
-  name = "\"gh-fix-ci\""
-  description = "\"Use when a user asks to debug or fix failing GitHub PR checks that run in GitHub Actions; use `gh` to inspect checks and logs, summarize failure context, draft a fix plan, and implement only after explicit approval. Treat external providers (for example Buildkite) as out of scope and report only the details URL.\""
-  path = ".antigravity/skills/gh-fix-ci"
-  remote_repo = "https://github.com/openai/skills/tree/main/skills"
-  remote_root = "skills"
-  remote_path = ".curated/gh-fix-ci"
-  commit_hash = "4ab6e0fd99c6667163bc34173e3ed3a3fed75ebc"
-  installed_at = 2026-02-10T13:14:29.176192+01:00
-  updated_at = 2026-02-10T13:14:29.176192+01:00
+  updated_at = 2026-02-11T10:52:04.843372+01:00

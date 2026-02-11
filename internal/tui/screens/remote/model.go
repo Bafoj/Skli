@@ -1,15 +1,11 @@
 package remote
 
 import (
-	"fmt"
-	"io"
-
+	"skli/internal/tui/screens/remote/delegates"
 	"skli/internal/tui/shared"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type State int
@@ -50,7 +46,7 @@ func NewRemoteScreen(remotes []string, configLocalPath string, fromConfig bool) 
 	}
 
 	items := BuildRemoteListItems(remotes, customURLItem{})
-	delegate := NewRemoteDelegate()
+	delegate := delegates.NewRemoteDelegate()
 	l := list.New(items, delegate, 60, 14)
 	l.Title = "Selecciona un repositorio remoto"
 	l.SetShowStatusBar(true)
@@ -76,7 +72,7 @@ func NewRemoteManageScreen(remotes []string, configLocalPath string) RemoteScree
 	ti.Width = 50
 
 	items := BuildRemoteListItems(remotes, addNewItem{})
-	delegate := NewRemoteDelegate()
+	delegate := delegates.NewRemoteDelegate()
 	l := list.New(items, delegate, 60, 14)
 	l.Title = "Gestionar Remotos"
 	l.SetShowStatusBar(true)
@@ -121,35 +117,6 @@ type addNewItem struct{}
 func (i addNewItem) Title() string       { return "➕ Añadir nuevo..." }
 func (i addNewItem) Description() string { return "Introduce una URL nueva" }
 func (i addNewItem) FilterValue() string { return "añadir nuevo add new" }
-
-type remoteDelegate struct {
-	styles list.DefaultItemStyles
-}
-
-func NewRemoteDelegate() remoteDelegate {
-	styles := list.NewDefaultItemStyles()
-	styles.SelectedTitle = styles.SelectedTitle.
-		Foreground(lipgloss.Color("#7D56F4")).
-		BorderForeground(lipgloss.Color("#7D56F4"))
-
-	return remoteDelegate{styles: styles}
-}
-
-func (d remoteDelegate) Height() int                             { return 1 }
-func (d remoteDelegate) Spacing() int                            { return 0 }
-func (d remoteDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
-func (d remoteDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
-	i, ok := item.(interface{ Title() string })
-	if !ok {
-		return
-	}
-	title := i.Title()
-	if index == m.Index() {
-		fmt.Fprint(w, d.styles.SelectedTitle.Render("➜ "+title))
-	} else {
-		fmt.Fprint(w, d.styles.NormalTitle.Render("  "+title))
-	}
-}
 
 func BuildRemoteListItems(remotes []string, extraItem list.Item) []list.Item {
 	items := make([]list.Item, 0, len(remotes)+1)

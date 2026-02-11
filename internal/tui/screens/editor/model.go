@@ -1,14 +1,10 @@
 package editor
 
 import (
-	"fmt"
-	"io"
-
+	"skli/internal/tui/screens/editor/delegates"
 	"skli/internal/tui/shared"
 
 	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 // editorItem implementa list.DefaultItem para un editor
@@ -24,46 +20,6 @@ func (i editorItem) Description() string {
 	return "Ruta personalizada"
 }
 func (i editorItem) FilterValue() string { return i.editor.Name }
-
-// editorDelegate es un delegate para editores
-type editorDelegate struct {
-	styles list.DefaultItemStyles
-}
-
-func newEditorDelegate() editorDelegate {
-	styles := list.NewDefaultItemStyles()
-	styles.SelectedTitle = styles.SelectedTitle.
-		Foreground(lipgloss.Color("#7D56F4")).
-		BorderForeground(lipgloss.Color("#7D56F4"))
-
-	return editorDelegate{styles: styles}
-}
-
-func (d editorDelegate) Height() int  { return 2 }
-func (d editorDelegate) Spacing() int { return 0 }
-func (d editorDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd {
-	return nil
-}
-
-func (d editorDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
-	i, ok := item.(editorItem)
-	if !ok {
-		return
-	}
-
-	title := i.Title()
-	desc := i.Description()
-
-	if index == m.Index() {
-		fmt.Fprintf(w, "%s\n%s",
-			d.styles.SelectedTitle.Render("➜ "+title),
-			d.styles.SelectedDesc.Render("    "+desc))
-	} else {
-		fmt.Fprintf(w, "%s\n%s",
-			d.styles.NormalTitle.Render("  "+title),
-			d.styles.NormalDesc.Render("    "+desc))
-	}
-}
 
 // EditorScreen es el modelo para la pantalla de selección de editor
 type EditorScreen struct {
@@ -84,7 +40,7 @@ func NewEditorScreen(skills []shared.Skill, tempDir, remoteURL, skillsRoot, comm
 		items[i] = editorItem{editor: ed}
 	}
 
-	delegate := newEditorDelegate()
+	delegate := delegates.NewEditorDelegate()
 	l := list.New(items, delegate, 60, 15)
 	l.Title = "Selecciona tu editor"
 	l.SetShowStatusBar(true)
@@ -117,7 +73,7 @@ func NewEditorScreenForConfig(currentPath string, remotes []string) EditorScreen
 		cursor = len(shared.Editors) - 1
 	}
 
-	delegate := newEditorDelegate()
+	delegate := delegates.NewEditorDelegate()
 	l := list.New(items, delegate, 60, 15)
 	l.Title = "Configura tu editor"
 	l.Select(cursor)
