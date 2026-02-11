@@ -16,7 +16,7 @@ const DefaultRoot = "skills"
 func IsSafeDeletePath(pathToDelete, skillsRoot string) error {
 	pathToDelete = filepath.Clean(strings.TrimSpace(pathToDelete))
 	if pathToDelete == "" || pathToDelete == "." || pathToDelete == string(os.PathSeparator) {
-		return fmt.Errorf("ruta insegura para eliminar: %s", pathToDelete)
+		return fmt.Errorf("unsafe path to delete: %s", pathToDelete)
 	}
 
 	if strings.TrimSpace(skillsRoot) == "" {
@@ -26,19 +26,19 @@ func IsSafeDeletePath(pathToDelete, skillsRoot string) error {
 
 	absRoot, err := filepath.Abs(skillsRoot)
 	if err != nil {
-		return fmt.Errorf("no se pudo resolver el root de skills: %w", err)
+		return fmt.Errorf("could not resolve skills root: %w", err)
 	}
 	absTarget, err := filepath.Abs(pathToDelete)
 	if err != nil {
-		return fmt.Errorf("no se pudo resolver la ruta a eliminar: %w", err)
+		return fmt.Errorf("could not resolve path to delete: %w", err)
 	}
 
 	rel, err := filepath.Rel(absRoot, absTarget)
 	if err != nil {
-		return fmt.Errorf("no se pudo validar la ruta a eliminar: %w", err)
+		return fmt.Errorf("could not validate path to delete: %w", err)
 	}
 	if rel == "." || rel == "" || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
-		return fmt.Errorf("ruta fuera del root de skills: %s", pathToDelete)
+		return fmt.Errorf("path outside skills root: %s", pathToDelete)
 	}
 	return nil
 }
@@ -108,7 +108,7 @@ func FindByName(name, skillsRoot string) (db.InstalledSkill, error) {
 
 	needle := strings.ToLower(strings.TrimSpace(name))
 	if needle == "" {
-		return db.InstalledSkill{}, fmt.Errorf("nombre de skill vacio")
+		return db.InstalledSkill{}, fmt.Errorf("empty skill name")
 	}
 
 	matches := make([]db.InstalledSkill, 0)
@@ -119,14 +119,14 @@ func FindByName(name, skillsRoot string) (db.InstalledSkill, error) {
 	}
 
 	if len(matches) == 0 {
-		return db.InstalledSkill{}, fmt.Errorf("skill no encontrado: %s", name)
+		return db.InstalledSkill{}, fmt.Errorf("skill not found: %s", name)
 	}
 	if len(matches) > 1 {
 		paths := make([]string, 0, len(matches))
 		for _, m := range matches {
 			paths = append(paths, m.Path)
 		}
-		return db.InstalledSkill{}, fmt.Errorf("nombre ambiguo '%s'. Coincidencias: %s", name, strings.Join(paths, ", "))
+		return db.InstalledSkill{}, fmt.Errorf("ambiguous name '%s'. Matches: %s", name, strings.Join(paths, ", "))
 	}
 
 	return matches[0], nil
@@ -139,10 +139,10 @@ func Delete(skill db.InstalledSkill) error {
 	}
 
 	if err := os.RemoveAll(skill.Path); err != nil {
-		return fmt.Errorf("error eliminando '%s': %w", skill.Name, err)
+		return fmt.Errorf("error deleting '%s': %w", skill.Name, err)
 	}
 	if err := db.DeleteInstalledSkill(skill.Path); err != nil {
-		return fmt.Errorf("error actualizando skli.lock: %w", err)
+		return fmt.Errorf("error updating skli.lock: %w", err)
 	}
 	return nil
 }
@@ -163,7 +163,7 @@ func DeleteByName(name, skillsRoot string) (db.InstalledSkill, error) {
 func PrepareLocalForUpload(localSkillPath string) (db.InstalledSkill, error) {
 	localSkillPath = strings.TrimSpace(localSkillPath)
 	if localSkillPath == "" {
-		return db.InstalledSkill{}, fmt.Errorf("local-skill-path es requerido")
+		return db.InstalledSkill{}, fmt.Errorf("local-skill-path is required")
 	}
 
 	absPath, err := filepath.Abs(localSkillPath)
@@ -173,12 +173,12 @@ func PrepareLocalForUpload(localSkillPath string) (db.InstalledSkill, error) {
 
 	info, err := os.Stat(localSkillPath)
 	if err != nil || !info.IsDir() {
-		return db.InstalledSkill{}, fmt.Errorf("ruta invalida: %s", localSkillPath)
+		return db.InstalledSkill{}, fmt.Errorf("invalid path: %s", localSkillPath)
 	}
 
 	meta, err := skillmeta.ParseDir(localSkillPath, 40)
 	if err != nil {
-		return db.InstalledSkill{}, fmt.Errorf("no se pudo leer SKILL.md: %w", err)
+		return db.InstalledSkill{}, fmt.Errorf("could not read SKILL.md: %w", err)
 	}
 
 	return db.InstalledSkill{

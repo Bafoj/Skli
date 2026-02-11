@@ -41,7 +41,7 @@ func (s ManageScreen) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.Msg = fmt.Sprintf("Error: %v", msg.Err)
 			return s, nil
 		}
-		s.Msg = fmt.Sprintf("Eliminados %d skill(s)", len(msg.Deleted))
+		s.Msg = fmt.Sprintf("Removed %d skill(s)", len(msg.Deleted))
 		refreshed, _ := NewManageScreen(s.ConfigRemotes, s.Mode)
 		refreshed.Msg = s.Msg
 		return refreshed, nil
@@ -62,7 +62,7 @@ func (s ManageScreen) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "enter":
 				selected := s.selectedSkills()
 				if len(selected) == 0 {
-					s.Msg = "Marca al menos un skill para eliminar"
+					s.Msg = "Select at least one skill to remove"
 					return s, nil
 				}
 				return s, commands.DeleteSkillsCmd(selected)
@@ -78,11 +78,11 @@ func (s ManageScreen) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "enter":
 				selected := s.selectedSkills()
 				if len(selected) == 0 {
-					s.Msg = "Marca al menos un skill para subir"
+					s.Msg = "Select at least one skill to upload"
 					return s, nil
 				}
 				s.State = StateUploading
-				s.Msg = fmt.Sprintf("Subiendo %d skill(s) a %s...", len(selected), s.TargetRemote)
+				s.Msg = fmt.Sprintf("Uploading %d skill(s) to %s...", len(selected), s.TargetRemote)
 				return s, commands.UploadSkillsCmd(selected, s.TargetRemote)
 			case "esc":
 				s.State = StateSelectingRemote
@@ -128,7 +128,7 @@ func (s ManageScreen) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					delegate := delegates.NewRemoteDelegate()
 					l := list.New(items, delegate, 60, 14)
-					l.Title = "Selecciona repositorio destino"
+					l.Title = "Select target repository"
 					l.SetShowStatusBar(false)
 					l.SetFilteringEnabled(false)
 					l.Styles.Title = shared.TitleStyle
@@ -170,12 +170,12 @@ func (s ManageScreen) updateSelectingRemote(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if s.Mode == ModeUpload {
 					s.TargetRemote = item.url
 					s.State = StateList
-					s.Msg = fmt.Sprintf("Destino seleccionado: %s", item.url)
+					s.Msg = fmt.Sprintf("Target selected: %s", item.url)
 					return s, nil
 				}
 
 				s.State = StateUploading
-				s.Msg = fmt.Sprintf("Iniciando subida de '%s' a %s...", s.SelectedSkill.Name, item.url)
+				s.Msg = fmt.Sprintf("Starting upload of '%s' to %s...", s.SelectedSkill.Name, item.url)
 				return s, commands.UploadSkillsCmd([]db.InstalledSkill{*s.SelectedSkill}, item.url)
 			case customURLItem:
 				s.State = StateInputRemote
@@ -207,11 +207,11 @@ func (s ManageScreen) updateInputRemote(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if s.Mode == ModeUpload {
 					s.TargetRemote = url
 					s.State = StateList
-					s.Msg = fmt.Sprintf("Destino seleccionado: %s", url)
+					s.Msg = fmt.Sprintf("Target selected: %s", url)
 					return s, nil
 				}
 				s.State = StateUploading
-				s.Msg = fmt.Sprintf("Iniciando subida de '%s' a %s...", s.SelectedSkill.Name, url)
+				s.Msg = fmt.Sprintf("Starting upload of '%s' to %s...", s.SelectedSkill.Name, url)
 				return s, commands.UploadSkillsCmd([]db.InstalledSkill{*s.SelectedSkill}, url)
 			}
 		}
@@ -259,7 +259,7 @@ func (s ManageScreen) updateConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return s, nil
 		}
 		refreshed, _ := NewManageScreen(s.ConfigRemotes, s.Mode)
-		refreshed.Msg = fmt.Sprintf("Eliminado: %s", strings.Join(msg.Deleted, ", "))
+		refreshed.Msg = fmt.Sprintf("Removed: %s", strings.Join(msg.Deleted, ", "))
 		return refreshed, nil
 	}
 	return s, nil
@@ -285,7 +285,7 @@ func (s ManageScreen) updateUploading(msg tea.Msg) (tea.Model, tea.Cmd) {
 			refreshed.State = StateList
 			refreshed.Msg = s.Msg
 			if okCount > 0 {
-				refreshed.Msg = fmt.Sprintf("Subidos %d skill(s)\n%s", okCount, s.Msg)
+				refreshed.Msg = fmt.Sprintf("Uploaded %d skill(s)\n%s", okCount, s.Msg)
 			}
 			return refreshed, nil
 		}

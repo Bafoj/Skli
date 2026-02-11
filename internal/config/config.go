@@ -31,7 +31,7 @@ func LoadConfig() (Config, error) {
 	}
 
 	if _, err := toml.DecodeFile(path, &cfg); err != nil {
-		return cfg, fmt.Errorf("error decodificando config: %w", err)
+		return cfg, fmt.Errorf("error decoding config: %w", err)
 	}
 
 	return cfg, nil
@@ -40,18 +40,18 @@ func LoadConfig() (Config, error) {
 func SaveConfig(cfg Config) error {
 	dir := GetConfigDir()
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("error creando directorio de config: %w", err)
+		return fmt.Errorf("error creating config directory: %w", err)
 	}
 
 	path := GetConfigPath()
 	f, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("error creando archivo de config: %w", err)
+		return fmt.Errorf("error creating config file: %w", err)
 	}
 	defer f.Close()
 
 	if err := toml.NewEncoder(f).Encode(cfg); err != nil {
-		return fmt.Errorf("error codificando config: %w", err)
+		return fmt.Errorf("error encoding config: %w", err)
 	}
 
 	return nil

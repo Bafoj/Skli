@@ -8,8 +8,8 @@ import (
 )
 
 func View(msg string) string {
-	return fmt.Sprintf("\n  Subiendo Skill...\n\n  %s\n\n  %s",
+	return fmt.Sprintf("\n  Uploading skill...\n\n  %s\n\n  %s",
 		lipgloss.NewStyle().Foreground(lipgloss.Color("#00FFFF")).Render(msg),
-		shared.HelpStyle.Render("esc/enter: volver"),
+		shared.HelpStyle.Render("esc/enter: back"),
 	)
 }

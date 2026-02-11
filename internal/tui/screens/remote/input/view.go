@@ -7,10 +7,10 @@ import (
 )
 
 func View(ti textinput.Model, hasRemotes bool) string {
-	help := "\nenter: continuar • esc/q: salir"
+	help := "\nenter: continue • esc/q: quit"
 	if hasRemotes {
-		help = "\nenter: continuar • esc: volver"
+		help = "\nenter: continue • esc: back"
 	}
-	return "Introduce la URL del repositorio Git remoto:\n\n" + ti.View() + "\n" +
+	return "Enter the remote Git repository URL:\n\n" + ti.View() + "\n" +
 		shared.HelpStyle.Render(help)
 }

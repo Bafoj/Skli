@@ -8,5 +8,5 @@ import (
 )
 
 func View(s spinner.Model, configLocalPath string) string {
-	return fmt.Sprintf("%s Instalando skills seleccionadas en %s...", s.View(), shared.InfoStyle.Render(configLocalPath))
+	return fmt.Sprintf("%s Installing selected skills in %s...", s.View(), shared.InfoStyle.Render(configLocalPath))
 }

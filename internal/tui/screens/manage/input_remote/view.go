@@ -8,8 +8,8 @@ import (
 )
 
 func View(remoteInput textinput.Model) string {
-	return fmt.Sprintf("\n  Introduce la URL del repositorio destino:\n\n  %s\n\n  %s",
+	return fmt.Sprintf("\n  Enter the target repository URL:\n\n  %s\n\n  %s",
 		remoteInput.View(),
-		shared.HelpStyle.Render("enter: confirmar • esc: volver"),
+		shared.HelpStyle.Render("enter: confirm • esc: back"),
 	)
 }

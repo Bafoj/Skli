@@ -7,6 +7,6 @@ import (
 )
 
 func View(ti textinput.Model) string {
-	return "Introduce la URL del nuevo repositorio:\n\n" + ti.View() + "\n" +
-		shared.HelpStyle.Render("\nenter: guardar • esc: cancelar")
+	return "Enter the new repository URL:\n\n" + ti.View() + "\n" +
+		shared.HelpStyle.Render("\nenter: save • esc: cancel")
 }

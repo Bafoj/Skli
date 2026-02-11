@@ -9,14 +9,14 @@ import (
 func (s ConfigScreen) View() string {
 	var b strings.Builder
 
-	b.WriteString("Configuración Global:\n\n")
+	b.WriteString("Global Configuration:\n\n")
 
 	// Opción 0: Remotes
 	cursor := "  "
 	if s.Cursor == 0 {
 		cursor = "➜ "
 	}
-	line := "Gestionar Remotos"
+	line := "Manage Remotes"
 	if s.Cursor == 0 {
 		b.WriteString(shared.SelectedItemStyle.Render(cursor+line) + "\n")
 	} else {
@@ -40,14 +40,14 @@ func (s ConfigScreen) View() string {
 	if s.Cursor == 2 {
 		cursor = "➜ "
 	}
-	line = "Confirmar y Guardar"
+	line = "Confirm and Save"
 	if s.Cursor == 2 {
 		b.WriteString(shared.SelectedItemStyle.Render(cursor+line) + "\n")
 	} else {
 		b.WriteString(shared.ItemStyle.Render(cursor+line) + "\n")
 	}
 
-	b.WriteString(shared.HelpStyle.Render("\n↑/↓: navegar • enter: seleccionar • q: salir"))
+	b.WriteString(shared.HelpStyle.Render("\n↑/↓: navigate • enter: select • q: quit"))
 
 	return b.String()
 }

@@ -73,7 +73,7 @@ func NewManageScreen(remotes []string, mode Mode) (ManageScreen, tea.Cmd) {
 		if mode == ModeList {
 			label := "local"
 			if managedByPath[sk.Path] {
-				label = "instalada"
+				label = "installed"
 			}
 			displaySkill.Description = fmt.Sprintf("[%s] %s", label, sk.Path)
 		}
@@ -96,17 +96,17 @@ func NewManageScreen(remotes []string, mode Mode) (ManageScreen, tea.Cmd) {
 			}
 		case ModeRemove:
 			return []key.Binding{
-				key.NewBinding(key.WithKeys("space"), key.WithHelp("space", "marcar")),
-				key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "eliminar")),
+				key.NewBinding(key.WithKeys("space"), key.WithHelp("space", "mark")),
+				key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "remove")),
 			}
 		case ModeUpload:
 			return []key.Binding{
-				key.NewBinding(key.WithKeys("space"), key.WithHelp("space", "marcar")),
-				key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "subir")),
+				key.NewBinding(key.WithKeys("space"), key.WithHelp("space", "mark")),
+				key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "upload")),
 			}
 		case ModeList:
 			return []key.Binding{
-				key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "salir")),
+				key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
 			}
 		}
 		return nil
@@ -114,7 +114,7 @@ func NewManageScreen(remotes []string, mode Mode) (ManageScreen, tea.Cmd) {
 	l.Styles.Title = shared.TitleStyle
 
 	ti := textinput.New()
-	ti.Placeholder = "https://github.com/usuario/repo.git"
+	ti.Placeholder = "https://github.com/user/repo.git"
 	ti.CharLimit = 156
 	ti.Width = 50
 
@@ -181,7 +181,7 @@ func (i remoteItem) FilterValue() string { return i.url }
 type customURLItem struct{}
 
 func (i customURLItem) Title() string       { return "✏️  Custom URL..." }
-func (i customURLItem) Description() string { return "Introduce una URL manualmente" }
+func (i customURLItem) Description() string { return "Enter a URL manually" }
 func (i customURLItem) FilterValue() string { return "custom url" }
 
 func buildUploadRemoteList(remotes []string) list.Model {
@@ -193,7 +193,7 @@ func buildUploadRemoteList(remotes []string) list.Model {
 
 	delegate := delegates.NewRemoteDelegate()
 	l := list.New(items, delegate, 60, 14)
-	l.Title = "Paso 1/2: Selecciona repositorio destino"
+	l.Title = "Step 1/2: Select target repository"
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
 	l.Styles.Title = shared.TitleStyle
@@ -203,13 +203,13 @@ func buildUploadRemoteList(remotes []string) list.Model {
 func listTitleForMode(mode Mode) string {
 	switch mode {
 	case ModeRemove:
-		return "Eliminar skills locales"
+		return "Remove local skills"
 	case ModeUpload:
-		return "Paso 2/2: Skills locales no sincronizados"
+		return "Step 2/2: Unsynced local skills"
 	case ModeList:
-		return "Skills locales e instaladas"
+		return "Local and installed skills"
 	default:
-		return "Gestionar Skills Instalados"
+		return "Manage Installed Skills"
 	}
 }
 

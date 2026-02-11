@@ -7,5 +7,5 @@ import (
 
 func View(errorMessage string) string {
 	return shared.ErrorStyle.Render(fmt.Sprintf("✘ Error: %s", errorMessage)) +
-		shared.HelpStyle.Render("\nPresiona 'r' para reintentar o 'q' para salir")
+		shared.HelpStyle.Render("\nPress 'r' to retry or 'q' to quit")
 }

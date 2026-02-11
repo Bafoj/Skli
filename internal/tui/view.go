@@ -6,7 +6,7 @@ import (
 
 func (m RootModel) View() string {
 	if m.quitting {
-		return "¡Hasta luego!\n"
+		return "Goodbye!\n"
 	}
 
 	var s strings.Builder

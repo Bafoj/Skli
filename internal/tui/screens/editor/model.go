@@ -17,7 +17,7 @@ func (i editorItem) Description() string {
 	if i.editor.Path != "" {
 		return "(" + i.editor.Path + ")"
 	}
-	return "Ruta personalizada"
+	return "Custom path"
 }
 func (i editorItem) FilterValue() string { return i.editor.Name }
 
@@ -42,9 +42,9 @@ func NewEditorScreen(skills []shared.Skill, tempDir, remoteURL, skillsRoot, comm
 
 	delegate := delegates.NewEditorDelegate()
 	l := list.New(items, delegate, 60, 15)
-	l.Title = "Selecciona tu editor"
+	l.Title = "Select your editor"
 	l.SetShowStatusBar(true)
-	l.SetStatusBarItemName("editor", "editores")
+	l.SetStatusBarItemName("editor", "editors")
 	l.Styles.Title = shared.TitleStyle
 
 	return EditorScreen{
@@ -75,7 +75,7 @@ func NewEditorScreenForConfig(currentPath string, remotes []string) EditorScreen
 
 	delegate := delegates.NewEditorDelegate()
 	l := list.New(items, delegate, 60, 15)
-	l.Title = "Configura tu editor"
+	l.Title = "Configure your editor"
 	l.Select(cursor)
 	l.SetShowStatusBar(true)
 	l.Styles.Title = shared.TitleStyle

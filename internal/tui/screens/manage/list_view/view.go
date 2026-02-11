@@ -10,7 +10,7 @@ import (
 
 func View(l list.Model, skillCount int, msg string) string {
 	if skillCount == 0 {
-		return "\n  No hay skills para mostrar.\n\n" + shared.HelpStyle.Render("  q: salir")
+		return "\n  No skills to show.\n\n" + shared.HelpStyle.Render("  q: quit")
 	}
 
 	if msg != "" {
@@ -18,7 +18,7 @@ func View(l list.Model, skillCount int, msg string) string {
 	}
 
 	originalTitle := l.Title
-	l.Title = fmt.Sprintf("%s (Pág. %d/%d)", originalTitle, l.Paginator.Page+1, l.Paginator.TotalPages)
+	l.Title = fmt.Sprintf("%s (Page %d/%d)", originalTitle, l.Paginator.Page+1, l.Paginator.TotalPages)
 	view := l.View()
 	l.Title = originalTitle
 	return view

@@ -40,7 +40,7 @@ func UploadSkillsCmd(selectedSkills []db.InstalledSkill, targetRemoteURL string)
 func DeleteSkillsCmd(selectedSkills []db.InstalledSkill) tea.Cmd {
 	return func() tea.Msg {
 		if len(selectedSkills) == 0 {
-			return DeleteSkillsMsg{Err: fmt.Errorf("no hay skills seleccionados")}
+			return DeleteSkillsMsg{Err: fmt.Errorf("no skills selected")}
 		}
 		deleted := make([]string, 0, len(selectedSkills))
 		for _, sk := range selectedSkills {

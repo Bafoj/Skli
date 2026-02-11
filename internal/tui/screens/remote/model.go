@@ -30,7 +30,7 @@ type RemoteScreen struct {
 // NewRemoteScreen crea una nueva pantalla de remote
 func NewRemoteScreen(remotes []string, configLocalPath string, fromConfig bool) RemoteScreen {
 	ti := textinput.New()
-	ti.Placeholder = "https://github.com/usuario/repo.git"
+	ti.Placeholder = "https://github.com/user/repo.git"
 	ti.CharLimit = 156
 	ti.Width = 50
 
@@ -48,7 +48,7 @@ func NewRemoteScreen(remotes []string, configLocalPath string, fromConfig bool) 
 	items := BuildRemoteListItems(remotes, customURLItem{})
 	delegate := delegates.NewRemoteDelegate()
 	l := list.New(items, delegate, 60, 14)
-	l.Title = "Selecciona un repositorio remoto"
+	l.Title = "Select a remote repository"
 	l.SetShowStatusBar(true)
 	l.SetStatusBarItemName("remote", "remotes")
 	l.SetShowHelp(true)
@@ -67,14 +67,14 @@ func NewRemoteScreen(remotes []string, configLocalPath string, fromConfig bool) 
 // NewRemoteManageScreen crea una pantalla para gestionar remotes
 func NewRemoteManageScreen(remotes []string, configLocalPath string) RemoteScreen {
 	ti := textinput.New()
-	ti.Placeholder = "https://github.com/usuario/repo.git"
+	ti.Placeholder = "https://github.com/user/repo.git"
 	ti.CharLimit = 156
 	ti.Width = 50
 
 	items := BuildRemoteListItems(remotes, addNewItem{})
 	delegate := delegates.NewRemoteDelegate()
 	l := list.New(items, delegate, 60, 14)
-	l.Title = "Gestionar Remotos"
+	l.Title = "Manage Remotes"
 	l.SetShowStatusBar(true)
 	l.SetStatusBarItemName("remote", "remotes")
 	l.SetShowHelp(true)
@@ -109,14 +109,14 @@ func (i remoteItem) FilterValue() string { return i.url }
 type customURLItem struct{}
 
 func (i customURLItem) Title() string       { return "✏️  Custom URL..." }
-func (i customURLItem) Description() string { return "Introduce una URL manualmente" }
+func (i customURLItem) Description() string { return "Enter a URL manually" }
 func (i customURLItem) FilterValue() string { return "custom url" }
 
 type addNewItem struct{}
 
-func (i addNewItem) Title() string       { return "➕ Añadir nuevo..." }
-func (i addNewItem) Description() string { return "Introduce una URL nueva" }
-func (i addNewItem) FilterValue() string { return "añadir nuevo add new" }
+func (i addNewItem) Title() string       { return "➕ Add New..." }
+func (i addNewItem) Description() string { return "Enter a new URL" }
+func (i addNewItem) FilterValue() string { return "add new" }
 
 func BuildRemoteListItems(remotes []string, extraItem list.Item) []list.Item {
 	items := make([]list.Item, 0, len(remotes)+1)

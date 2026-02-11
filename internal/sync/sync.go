@@ -39,7 +39,7 @@ type SyncResult struct {
 func SyncAllSkills() ([]SyncResult, error) {
 	grouped, err := db.GetSkillsByRepo()
 	if err != nil {
-		return nil, fmt.Errorf("error obteniendo skills de skli.lock: %w", err)
+		return nil, fmt.Errorf("error getting skills from skli.lock: %w", err)
 	}
 
 	if len(grouped) == 0 {
@@ -65,7 +65,7 @@ func SyncAllSkills() ([]SyncResult, error) {
 			case <-done:
 				return
 			default:
-				fmt.Printf("\r%s Verificando repos... (%d/%d)",
+				fmt.Printf("\r%s Checking repos... (%d/%d)",
 					infoStyle.Render(spinnerChars[i%len(spinnerChars)]),
 					processedRepos, totalRepos)
 				i++
@@ -113,7 +113,7 @@ func syncRepo(repoURL string, skills []db.InstalledSkill) []SyncResult {
 		for _, s := range skills {
 			results = append(results, SyncResult{
 				SkillName: s.Name,
-				Error:     fmt.Errorf("error verificando repo: %w", err),
+				Error:     fmt.Errorf("error checking repo: %w", err),
 			})
 		}
 		return results
@@ -152,7 +152,7 @@ func syncRepo(repoURL string, skills []db.InstalledSkill) []SyncResult {
 		for _, s := range skills {
 			results = append(results, SyncResult{
 				SkillName: s.Name,
-				Error:     fmt.Errorf("error clonando repo: %w", err),
+				Error:     fmt.Errorf("error cloning repo: %w", err),
 			})
 		}
 		return results
@@ -174,7 +174,7 @@ func syncRepo(repoURL string, skills []db.InstalledSkill) []SyncResult {
 		if !exists {
 			results = append(results, SyncResult{
 				SkillName: installed.Name,
-				Error:     fmt.Errorf("skill ya no existe en el repo remoto"),
+				Error:     fmt.Errorf("skill no longer exists in remote repo"),
 			})
 			continue
 		}
@@ -209,7 +209,7 @@ func syncRepo(repoURL string, skills []db.InstalledSkill) []SyncResult {
 		if err := copyDirFn(src, dest); err != nil {
 			results = append(results, SyncResult{
 				SkillName: installed.Name,
-				Error:     fmt.Errorf("error copiando: %w", err),
+				Error:     fmt.Errorf("error copying: %w", err),
 			})
 			continue
 		}

@@ -43,7 +43,7 @@ func NewSkillsScreen(infos []gitrepo.SkillInfo, tempDir, remoteURL, skillsRoot, 
 
 	delegate := delegates.NewSkillDelegate()
 	l := list.New(items, delegate, 60, 20)
-	l.Title = "Selecciona los skills a instalar"
+	l.Title = "Select skills to install"
 	l.SetShowStatusBar(true)
 	l.SetStatusBarItemName("skill", "skills")
 	l.Styles.Title = shared.TitleStyle

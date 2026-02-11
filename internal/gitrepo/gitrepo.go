@@ -98,25 +98,25 @@ func CloneAndScan(remoteURL, skillsPath string) (ScanResult, error) {
 
 	tempDir, err := os.MkdirTemp("", "skli-repo-*")
 	if err != nil {
-		return ScanResult{}, fmt.Errorf("error creando dir temporal: %w", err)
+		return ScanResult{}, fmt.Errorf("error creating temp dir: %w", err)
 	}
 
 	// 1. Inicializar un repo vacío
 	if err := runGit(tempDir, "init"); err != nil {
 		os.RemoveAll(tempDir)
-		return ScanResult{}, fmt.Errorf("error inicializando repo: %w", err)
+		return ScanResult{}, fmt.Errorf("error initializing repo: %w", err)
 	}
 
 	// 2. Añadir el remote (usamos la BaseURL parseada)
 	if err := runGit(tempDir, "remote", "add", "origin", repoInfo.BaseURL); err != nil {
 		os.RemoveAll(tempDir)
-		return ScanResult{}, fmt.Errorf("error añadiendo remote: %w", err)
+		return ScanResult{}, fmt.Errorf("error adding remote: %w", err)
 	}
 
 	// 3. Configurar sparse-checkout
 	if err := runGit(tempDir, "config", "core.sparseCheckout", "true"); err != nil {
 		os.RemoveAll(tempDir)
-		return ScanResult{}, fmt.Errorf("error configurando sparse-checkout: %w", err)
+		return ScanResult{}, fmt.Errorf("error configuring sparse-checkout: %w", err)
 	}
 
 	// 4. Definir qué carpeta descargar
@@ -127,26 +127,26 @@ func CloneAndScan(remoteURL, skillsPath string) (ScanResult, error) {
 	}
 	if err := os.WriteFile(sparseFile, []byte(sparseContent+"\n"), 0644); err != nil {
 		os.RemoveAll(tempDir)
-		return ScanResult{}, fmt.Errorf("error escribiendo sparse-checkout: %w", err)
+		return ScanResult{}, fmt.Errorf("error writing sparse-checkout: %w", err)
 	}
 
 	// 5. Fetch solo la rama especificada (o HEAD) con depth 1
 	if err := runGit(tempDir, "fetch", "--depth", "1", "origin", repoInfo.Branch); err != nil {
 		os.RemoveAll(tempDir)
-		return ScanResult{}, fmt.Errorf("error descargando repo (rama %s): %w", repoInfo.Branch, err)
+		return ScanResult{}, fmt.Errorf("error fetching repo (branch %s): %w", repoInfo.Branch, err)
 	}
 
 	// 6. Checkout
 	if err := runGit(tempDir, "checkout", "FETCH_HEAD"); err != nil {
 		os.RemoveAll(tempDir)
-		return ScanResult{}, fmt.Errorf("error haciendo checkout: %w", err)
+		return ScanResult{}, fmt.Errorf("error checking out: %w", err)
 	}
 
 	// 7. Obtener el hash del commit actual
 	commitHash, err := getCommitHash(tempDir)
 	if err != nil {
 		os.RemoveAll(tempDir)
-		return ScanResult{}, fmt.Errorf("error obteniendo hash del commit: %w", err)
+		return ScanResult{}, fmt.Errorf("error getting commit hash: %w", err)
 	}
 
 	// Buscar recursivamente archivos SKILL.md
@@ -162,7 +162,7 @@ func CloneAndScan(remoteURL, skillsPath string) (ScanResult, error) {
 
 	if len(skills) == 0 {
 		os.RemoveAll(tempDir)
-		return ScanResult{}, fmt.Errorf("no se encontraron skills (archivos SKILL.md) en '%s'", skillsPath)
+		return ScanResult{}, fmt.Errorf("no skills found (SKILL.md files) in '%s'", skillsPath)
 	}
 
 	return ScanResult{
@@ -192,12 +192,12 @@ func GetRemoteHash(repoURL string) (string, error) {
 	cmd := exec.Command("git", "ls-remote", repoInfo.BaseURL, repoInfo.Branch)
 	output, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("error obteniendo hash remoto: %w", err)
+		return "", fmt.Errorf("error getting remote hash: %w", err)
 	}
 
 	parts := strings.Fields(string(output))
 	if len(parts) == 0 {
-		return "", fmt.Errorf("no se pudo obtener hash del repositorio")
+		return "", fmt.Errorf("could not get repository hash")
 	}
 	return parts[0], nil
 }
@@ -251,7 +251,7 @@ func InstallSkills(tempRepoPath, skillsPath, localPath string, selectedSkills []
 	}
 
 	if err := os.MkdirAll(localPath, 0755); err != nil {
-		return fmt.Errorf("error creando carpeta local %s: %w", localPath, err)
+		return fmt.Errorf("error creating local folder %s: %w", localPath, err)
 	}
 
 	for _, skill := range selectedSkills {
@@ -274,7 +274,7 @@ func InstallSkills(tempRepoPath, skillsPath, localPath string, selectedSkills []
 
 		cmd := exec.Command("cp", "-r", src, dest)
 		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("error copiando skill %s: %w", skill.Name, err)
+			return fmt.Errorf("error copying skill %s: %w", skill.Name, err)
 		}
 	}
 

@@ -27,12 +27,12 @@ func checkGlabInstalled() bool {
 func CloneForPush(remoteURL string) (string, error) {
 	tempDir, err := os.MkdirTemp("", "skli-pr-*")
 	if err != nil {
-		return "", fmt.Errorf("error creando dir temporal: %w", err)
+		return "", fmt.Errorf("error creating temp dir: %w", err)
 	}
 
 	if err := runGit(tempDir, "clone", remoteURL, "."); err != nil {
 		os.RemoveAll(tempDir)
-		return "", fmt.Errorf("error clonando repo: %w", err)
+		return "", fmt.Errorf("error cloning repo: %w", err)
 	}
 
 	return tempDir, nil
@@ -52,7 +52,7 @@ func PrepareSkillBranch(repoDir, skillName string) (string, error) {
 	branchName := fmt.Sprintf("feat/update-%s-%s", sanitizedName, timestamp)
 
 	if err := runGit(repoDir, "checkout", "-b", branchName); err != nil {
-		return "", fmt.Errorf("error creando rama %s: %w", branchName, err)
+		return "", fmt.Errorf("error creating branch %s: %w", branchName, err)
 	}
 
 	return branchName, nil
@@ -79,7 +79,7 @@ func FindSkillInRepo(repoDir, skillName string) (string, error) {
 		return "", err
 	}
 	if foundPath == "" {
-		return "", fmt.Errorf("skill '%s' no encontrado en el repositorio remoto", skillName)
+		return "", fmt.Errorf("skill '%s' not found in remote repository", skillName)
 	}
 	return foundPath, nil
 }
@@ -90,12 +90,12 @@ func CopySkillFiles(repoDir, localSkillPath, repoSkillPath string) error {
 
 	os.RemoveAll(destDir)
 	if err := os.MkdirAll(destDir, 0755); err != nil {
-		return fmt.Errorf("error creando directorio destino: %w", err)
+		return fmt.Errorf("error creating destination directory: %w", err)
 	}
 
 	cmd := exec.Command("cp", "-r", localSkillPath+"/", destDir)
 	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("error copiando archivos: %w : %s", err, string(output))
+		return fmt.Errorf("error copying files: %w : %s", err, string(output))
 	}
 
 	return nil
@@ -198,20 +198,20 @@ func buildPRURL(provider gitProvider, repoURL, branchName, targetBranch, title s
 // PushAndCreatePR hace commit, push y crea PR/MR cuando es posible.
 func PushAndCreatePR(repoDir, remoteURL, branchName, skillName, description string) (string, error) {
 	if err := runGit(repoDir, "add", "."); err != nil {
-		return "", fmt.Errorf("git add fallo: %w", err)
+		return "", fmt.Errorf("git add failed: %w", err)
 	}
 
 	if err := runGit(repoDir, "diff", "--staged", "--quiet"); err == nil {
-		return "", fmt.Errorf("no hay cambios para subir (el contenido local es identico al remoto)")
+		return "", fmt.Errorf("no changes to upload (local content is identical to remote)")
 	}
 
 	msg := fmt.Sprintf("feat(%s): update skill content", skillName)
 	if err := runGit(repoDir, "commit", "-m", msg); err != nil {
-		return "", fmt.Errorf("git commit fallo: %w", err)
+		return "", fmt.Errorf("git commit failed: %w", err)
 	}
 
 	if err := runGit(repoDir, "push", "origin", branchName); err != nil {
-		return "", fmt.Errorf("git push fallo: %w", err)
+		return "", fmt.Errorf("git push failed: %w", err)
 	}
 
 	title := fmt.Sprintf("Update skill: %s", skillName)
