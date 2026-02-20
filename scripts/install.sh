@@ -8,7 +8,7 @@ set -e
 # Configuration
 REPO="Bafoj/Skli"
 BINARY_NAME="skli"
-INSTALL_DIR="/usr/local/bin"
+INSTALL_DIR="${HOME}/.skli/bin"
 VERSION="0.1.1" # Updated automatically by 'make tag'
 
 # Detect OS and Architecture
@@ -58,10 +58,36 @@ else
 fi
 
 echo "Installing to $INSTALL_DIR..."
+mkdir -p "$INSTALL_DIR"
 chmod +x "/tmp/skli_extract/$BINARY_NAME"
-sudo mv "/tmp/skli_extract/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
+mv "/tmp/skli_extract/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
 
 # Clean up
 rm -rf "/tmp/skli_extract" "/tmp/$ARCHIVE_NAME"
 
-echo "Successfully installed skli! Run 'skli help' to get started."
+echo "Successfully installed skli!"
+
+# Check if INSTALL_DIR is in PATH
+if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+    echo ""
+    echo "Warning: $INSTALL_DIR is not in your PATH."
+    echo "To be able to run 'skli' from anywhere, add it to your profile:"
+    echo ""
+    if [[ "$SHELL" == */zsh ]]; then
+        echo "  echo 'export PATH=\"\$PATH:$INSTALL_DIR\"' >> ~/.zshrc"
+        echo "  source ~/.zshrc"
+    elif [[ "$SHELL" == */bash ]]; then
+        if [[ "$OS" == "darwin" ]]; then
+            echo "  echo 'export PATH=\"\$PATH:$INSTALL_DIR\"' >> ~/.bash_profile"
+            echo "  source ~/.bash_profile"
+        else
+            echo "  echo 'export PATH=\"\$PATH:$INSTALL_DIR\"' >> ~/.bashrc"
+            echo "  source ~/.bashrc"
+        fi
+    else
+        echo "  Add $INSTALL_DIR to your shell's PATH environment variable."
+    fi
+    echo ""
+fi
+
+echo "Run 'skli help' to get started."
