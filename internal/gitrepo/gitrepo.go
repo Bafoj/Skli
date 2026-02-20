@@ -2,6 +2,7 @@ package gitrepo
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -272,13 +273,71 @@ func InstallSkills(tempRepoPath, skillsPath, localPath string, selectedSkills []
 		// Asegurar que el padre existe (aunque localPath ya debería existir)
 		os.MkdirAll(filepath.Dir(dest), 0755)
 
-		cmd := exec.Command("cp", "-r", src, dest)
-		if err := cmd.Run(); err != nil {
+		if err := copyDir(src, dest); err != nil {
 			return fmt.Errorf("error copying skill %s: %w", skill.Name, err)
 		}
 	}
 
 	return nil
+}
+
+// copyDir copies a directory recursively from src to dst.
+func copyDir(src string, dst string) error {
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(dst, srcInfo.Mode()); err != nil {
+		return err
+	}
+
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(src, entry.Name())
+		dstPath := filepath.Join(dst, entry.Name())
+
+		if entry.IsDir() {
+			if err := copyDir(srcPath, dstPath); err != nil {
+				return err
+			}
+		} else {
+			if err := copyFile(srcPath, dstPath); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// copyFile copies a single file from src to dst.
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	if _, err = io.Copy(out, in); err != nil {
+		return err
+	}
+
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	return os.Chmod(dst, srcInfo.Mode())
 }
 
 // GetSkillFolderName devuelve el nombre de la carpeta local para un skill

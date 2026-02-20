@@ -93,9 +93,8 @@ func CopySkillFiles(repoDir, localSkillPath, repoSkillPath string) error {
 		return fmt.Errorf("error creating destination directory: %w", err)
 	}
 
-	cmd := exec.Command("cp", "-r", localSkillPath+"/", destDir)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("error copying files: %w : %s", err, string(output))
+	if err := copyDir(localSkillPath, destDir); err != nil {
+		return fmt.Errorf("error copying files: %w", err)
 	}
 
 	return nil

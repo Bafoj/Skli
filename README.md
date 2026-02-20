@@ -11,7 +11,7 @@ You can install `skli` on Mac, Linux, or Windows without needing Go installed.
 Run the following command in your terminal:
 
 ```bash
-curl -fsSL https://bitbucket.org/cuatroochenta/skli/raw/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Bafoj/Skli/main/scripts/install.sh | bash
 ```
 
 > [!NOTE]
@@ -22,7 +22,7 @@ curl -fsSL https://bitbucket.org/cuatroochenta/skli/raw/main/scripts/install.sh 
 Run the following command in PowerShell (as Administrator for best results):
 
 ```powershell
-powershell -c "irm https://bitbucket.org/cuatroochenta/skli/raw/main/scripts/install.ps1 | iex"
+powershell -c "irm https://raw.githubusercontent.com/Bafoj/Skli/main/scripts/install.ps1 | iex"
 ```
 
 ---

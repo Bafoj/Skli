@@ -49,5 +49,4 @@ changelog:
       - '^docs:'
       - '^test:'
 
-# Publishing to Bitbucket is handled via the Makefile and scripts/upload_to_bitbucket.sh
-# because GoReleaser OSS does not support Bitbucket Releases natively or 'after' hooks.
+# Publishing is handled via GitHub Releases (default) or the Makefile.

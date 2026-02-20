@@ -22,10 +22,13 @@ releases: clean
 	GOOS=windows GOARCH=amd64 go build -o releases/$(BINARY_NAME)-windows-amd64.exe $(MAIN_PATH)
 	@echo "Binarios generados en releases/"
 
-## goreleaser: Realiza una release usando Goreleaser y sube a Bitbucket (requiere la herramienta)
-goreleaser:
+## release: Crea una release real y la sube a GitHub (Requiere GITHUB_TOKEN)
+release:
+	@goreleaser release --clean
+
+## snapshot: Genera una release local sin subir nada
+snapshot:
 	@goreleaser release --snapshot --clean
-	@/bin/bash scripts/upload_to_bitbucket.sh
 
 ## tag: Crea un tag de git, sincroniza versiones en scripts y lo sube (Uso: make tag version=0.1.0)
 tag:
@@ -42,14 +45,14 @@ tag:
 	@sed -i '' 's/$$version = ".*"/$$version = "$(version)"/' scripts/install.ps1
 	@git add scripts/install.sh scripts/install.ps1
 	@git commit -m "chore: update version to v$(version) in installation scripts" || echo "No hay cambios en los scripts para commitear"
-	@git push origin master
+	@git push origin main
 	@git tag -a v$(version) -m "Release v$(version)"
 	@git push origin v$(version)
 	@echo "Tag v$(version) creado y subido tras sincronizar scripts."
 
 ## run: Ejecuta la aplicación directamente
 run:
-	@go run $(MAIN_PATH)
+	@go run $(MAIN_PATH) $(args)
 
 ## clean: Elimina los binarios y el directorio de distribución
 clean:
