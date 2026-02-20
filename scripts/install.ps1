@@ -4,7 +4,7 @@
 $repo = "Bafoj/Skli"
 $binaryName = "skli.exe"
 $installDir = "$HOME\.skli\bin"
-$version = "0.1.1" # Update this value for each release
+$version = "0.1.2" # Update this value for each release
 
 # Detect Architecture
 $arch = if ($env:PROCESSOR_ARCHITECTURE -eq "AMD64") { "amd64" } else { "386" }

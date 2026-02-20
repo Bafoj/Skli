@@ -9,7 +9,7 @@ set -e
 REPO="Bafoj/Skli"
 BINARY_NAME="skli"
 INSTALL_DIR="${HOME}/.skli/bin"
-VERSION="0.1.1" # Updated automatically by 'make tag'
+VERSION="0.1.2" # Updated automatically by 'make tag'
 
 # Detect OS and Architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
