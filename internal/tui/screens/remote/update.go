@@ -16,7 +16,11 @@ func (s RemoteScreen) Init() tea.Cmd {
 
 func (s RemoteScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if msg, ok := msg.(tea.WindowSizeMsg); ok {
-		s.List.SetSize(msg.Width, msg.Height-4)
+		// List is only initialized when there are remotes to display.
+		// In StateInput there is no list, so skip SetSize to avoid nil panic.
+		if s.State != StateInput {
+			s.List.SetSize(msg.Width, msg.Height-4)
+		}
 	}
 
 	switch s.State {
