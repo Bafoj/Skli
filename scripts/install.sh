@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-REPO="cuatroochenta/skli"
+REPO="Bafoj/Skli"
 BINARY_NAME="skli"
 INSTALL_DIR="/usr/local/bin"
 VERSION="0.1.0" # Updated automatically by 'make tag'
@@ -30,7 +30,7 @@ fi
 # We try tar.gz first as it's the standard for Linux/Mac in our config
 ARCHIVE_EXT="tar.gz"
 ARCHIVE_NAME="${BINARY_NAME}_${VERSION}_${OS}_${ARCH}.${ARCHIVE_EXT}"
-DOWNLOAD_URL="https://bitbucket.org/$REPO/downloads/$ARCHIVE_NAME"
+DOWNLOAD_URL="https://github.com/$REPO/releases/download/v$VERSION/$ARCHIVE_NAME"
 
 echo "Downloading $BINARY_NAME $VERSION for $OS/$ARCH..."
 
@@ -39,7 +39,7 @@ if ! curl -fL "$DOWNLOAD_URL" -o "/tmp/$ARCHIVE_NAME"; then
     echo "Could not find $ARCHIVE_EXT, trying zip..."
     ARCHIVE_EXT="zip"
     ARCHIVE_NAME="${BINARY_NAME}_${VERSION}_${OS}_${ARCH}.${ARCHIVE_EXT}"
-    DOWNLOAD_URL="https://bitbucket.org/$REPO/downloads/$ARCHIVE_NAME"
+    DOWNLOAD_URL="https://github.com/$REPO/releases/download/v$VERSION/$ARCHIVE_NAME"
     curl -fL "$DOWNLOAD_URL" -o "/tmp/$ARCHIVE_NAME"
 fi
 
