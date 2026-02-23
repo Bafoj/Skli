@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -15,7 +16,8 @@ type InstalledSkill struct {
 	RemoteRepo  string    `toml:"remote_repo"` // URL del repo de origen
 	RemoteRoot  string    `toml:"remote_root"` // Directorio base dentro del repo (ej: "skills")
 	RemotePath  string    `toml:"remote_path"` // Ruta relativa al RemoteRoot (ej: ".curated/cloudflare-deploy")
-	CommitHash  string    `toml:"commit_hash"` // Hash del commit cuando se instaló
+	CommitHash  string    `toml:"commit_hash"` // Hash del commit cuando se instaló (deprecated)
+	TreeHash    string    `toml:"tree_hash"`   // Hash del árbol (carpeta) cuando se instaló
 	InstalledAt time.Time `toml:"installed_at"`
 	UpdatedAt   time.Time `toml:"updated_at"`
 }
@@ -28,15 +30,21 @@ type LockFile struct {
 
 const lockFileName = "skli.lock"
 
-// LoadLockFile carga el archivo skli.lock
+func getLockFilePath() string {
+	return lockFileName
+}
+
+// LoadLockFile lee el archivo skli.lock
 func LoadLockFile() (*LockFile, error) {
-	if _, err := os.Stat(lockFileName); os.IsNotExist(err) {
-		return &LockFile{Skills: []InstalledSkill{}}, nil
+	var lock LockFile
+	path := getLockFilePath()
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return &lock, nil
 	}
 
-	var lock LockFile
-	if _, err := toml.DecodeFile(lockFileName, &lock); err != nil {
-		return nil, err
+	if _, err := toml.DecodeFile(path, &lock); err != nil {
+		return nil, fmt.Errorf("error reading lock file: %w", err)
 	}
 
 	return &lock, nil
@@ -44,28 +52,34 @@ func LoadLockFile() (*LockFile, error) {
 
 // SaveLockFile guarda el archivo skli.lock
 func SaveLockFile(lock *LockFile) error {
+	path := getLockFilePath()
 	lock.LastUpdated = time.Now()
-	f, err := os.Create(lockFileName)
+
+	f, err := os.Create(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating lock file: %w", err)
 	}
 	defer f.Close()
 
-	return toml.NewEncoder(f).Encode(lock)
+	if err := toml.NewEncoder(f).Encode(lock); err != nil {
+		return fmt.Errorf("error writing lock file: %w", err)
+	}
+
+	return nil
 }
 
-// SaveInstalledSkill guarda o actualiza un skill instalado en el lock file
+// SaveInstalledSkill añade o actualiza un skill en el lock file
 func SaveInstalledSkill(skill InstalledSkill) error {
 	lock, err := LoadLockFile()
 	if err != nil {
 		return err
 	}
 
-	// Buscar si ya existe para actualizarlo
 	found := false
 	for i, s := range lock.Skills {
-		if s.Path == skill.Path {
-			skill.InstalledAt = s.InstalledAt
+		// Asumimos que la combinación de repo + path es única
+		if s.RemoteRepo == skill.RemoteRepo && s.RemotePath == skill.RemotePath {
+			skill.InstalledAt = s.InstalledAt // Mantener fecha original
 			skill.UpdatedAt = time.Now()
 			lock.Skills[i] = skill
 			found = true
@@ -82,7 +96,25 @@ func SaveInstalledSkill(skill InstalledSkill) error {
 	return SaveLockFile(lock)
 }
 
-// GetSkillsByRepo agrupa los skills por repo de origen
+// RemoveInstalledSkill elimina un skill del lock file usando su ruta local
+func RemoveInstalledSkill(localPath string) error {
+	lock, err := LoadLockFile()
+	if err != nil {
+		return err
+	}
+
+	var newSkills []InstalledSkill
+	for _, s := range lock.Skills {
+		if s.Path != localPath {
+			newSkills = append(newSkills, s)
+		}
+	}
+
+	lock.Skills = newSkills
+	return SaveLockFile(lock)
+}
+
+// GetSkillsByRepo agrupa los skills instalados por su repositorio de origen
 func GetSkillsByRepo() (map[string][]InstalledSkill, error) {
 	lock, err := LoadLockFile()
 	if err != nil {
@@ -90,9 +122,12 @@ func GetSkillsByRepo() (map[string][]InstalledSkill, error) {
 	}
 
 	grouped := make(map[string][]InstalledSkill)
-	for _, s := range lock.Skills {
-		grouped[s.RemoteRepo] = append(grouped[s.RemoteRepo], s)
+	for _, skill := range lock.Skills {
+		if skill.RemoteRepo != "" {
+			grouped[skill.RemoteRepo] = append(grouped[skill.RemoteRepo], skill)
+		}
 	}
+
 	return grouped, nil
 }
 

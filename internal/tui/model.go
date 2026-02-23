@@ -27,7 +27,7 @@ func NewRootModel(initialURL, skillsRoot, configLocalPath string, configMode boo
 
 	switch {
 	case manageMode != manage.ModeNone:
-		activeScreen, _ = manage.NewManageScreen(remotes, manageMode)
+		activeScreen, _ = manage.NewManageScreen(remotes, manageMode, skillsRoot)
 	case configMode:
 		activeScreen = config.NewConfigScreen(configLocalPath, remotes)
 	case initialURL != "":

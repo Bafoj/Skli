@@ -5,6 +5,14 @@ import (
 	"skli/internal/tui/shared"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
+)
+
+type State int
+
+const (
+	StateSelecting State = iota
+	StateInputCustom
 )
 
 // editorItem implementa list.DefaultItem para un editor
@@ -23,7 +31,9 @@ func (i editorItem) FilterValue() string { return i.editor.Name }
 
 // EditorScreen es el modelo para la pantalla de selección de editor
 type EditorScreen struct {
+	State      State
 	List       list.Model
+	TextInput  textinput.Model
 	Skills     []shared.Skill
 	TempDir    string
 	RemoteURL  string
@@ -47,8 +57,15 @@ func NewEditorScreen(skills []shared.Skill, tempDir, remoteURL, skillsRoot, comm
 	l.SetStatusBarItemName("editor", "editors")
 	l.Styles.Title = shared.TitleStyle
 
+	ti := textinput.New()
+	ti.Placeholder = "/path/to/custom/folder"
+	ti.CharLimit = 256
+	ti.Width = 50
+
 	return EditorScreen{
+		State:      StateSelecting,
 		List:       l,
+		TextInput:  ti,
 		Skills:     skills,
 		TempDir:    tempDir,
 		RemoteURL:  remoteURL,
@@ -69,8 +86,18 @@ func NewEditorScreenForConfig(currentPath string, remotes []string) EditorScreen
 			cursor = i
 		}
 	}
-	if cursor == 0 && currentPath != "" && currentPath != shared.Editors[0].Path {
-		cursor = len(shared.Editors) - 1
+	if cursor == 0 && currentPath != "" {
+		// Check if it matches any known editor
+		found := false
+		for _, ed := range shared.Editors {
+			if ed.Path == currentPath {
+				found = true
+				break
+			}
+		}
+		if !found {
+			cursor = len(shared.Editors) - 1 // Custom
+		}
 	}
 
 	delegate := delegates.NewEditorDelegate()
@@ -80,8 +107,18 @@ func NewEditorScreenForConfig(currentPath string, remotes []string) EditorScreen
 	l.SetShowStatusBar(true)
 	l.Styles.Title = shared.TitleStyle
 
+	ti := textinput.New()
+	ti.Placeholder = "/path/to/custom/folder"
+	if cursor == len(shared.Editors)-1 && currentPath != "" {
+		ti.SetValue(currentPath)
+	}
+	ti.CharLimit = 256
+	ti.Width = 50
+
 	return EditorScreen{
+		State:      StateSelecting,
 		List:       l,
+		TextInput:  ti,
 		ConfigMode: true,
 		Remotes:    remotes,
 	}

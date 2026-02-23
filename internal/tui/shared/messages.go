@@ -42,7 +42,11 @@ type RemotesUpdatedMsg struct {
 	Remotes []string
 }
 
-type ConfigSavedMsg struct{}
+type ConfigSavedMsg struct {
+	LocalPath    string
+	Remotes      []string
+	NavigateBack bool // If true, navigate to config screen after saving
+}
 
 // Mensajes de resultado de operaciones
 type ScanResultMsg struct {

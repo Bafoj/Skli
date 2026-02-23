@@ -78,7 +78,7 @@ func (s RemoteScreen) updateInputNew(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmdList := s.List.SetItems(items)
 			return s, tea.Batch(
 				cmdList,
-				shared.SaveConfigCmd(s.ConfigLocalPath, s.Remotes),
+				shared.SaveConfigCmd(s.ConfigLocalPath, s.Remotes, false),
 				func() tea.Msg { return shared.RemotesUpdatedMsg{Remotes: s.Remotes} },
 			)
 		case "esc":
@@ -144,7 +144,7 @@ func (s RemoteScreen) updateManaging(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd := s.List.SetItems(items)
 				return s, tea.Batch(
 					cmd,
-					shared.SaveConfigCmd(s.ConfigLocalPath, s.Remotes),
+					shared.SaveConfigCmd(s.ConfigLocalPath, s.Remotes, false),
 					func() tea.Msg { return shared.RemotesUpdatedMsg{Remotes: s.Remotes} },
 				)
 			}

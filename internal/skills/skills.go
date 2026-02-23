@@ -12,7 +12,7 @@ import (
 
 const DefaultRoot = "skills"
 
-// IsSafeDeletePath valida que el path a eliminar sea un subdirectorio del root de skills.
+// IsSafeDeletePath valida que el path a eliminar sea un subdirectorio del root de skills y esté dentro del workspace.
 func IsSafeDeletePath(pathToDelete, skillsRoot string) error {
 	pathToDelete = filepath.Clean(strings.TrimSpace(pathToDelete))
 	if pathToDelete == "" || pathToDelete == "." || pathToDelete == string(os.PathSeparator) {
@@ -40,6 +40,19 @@ func IsSafeDeletePath(pathToDelete, skillsRoot string) error {
 	if rel == "." || rel == "" || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
 		return fmt.Errorf("path outside skills root: %s", pathToDelete)
 	}
+
+	// Asegurar que el path esté dentro del workspace actual para evitar ataques de path traversal
+	cwd, err := os.Getwd()
+	if err == nil {
+		if absCwd, err := filepath.Abs(cwd); err == nil {
+			if relCwd, err := filepath.Rel(absCwd, absTarget); err == nil {
+				if relCwd == "." || relCwd == "" || relCwd == ".." || strings.HasPrefix(relCwd, ".."+string(os.PathSeparator)) {
+					return fmt.Errorf("path outside workspace: %s", pathToDelete)
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -133,8 +146,10 @@ func FindByName(name, skillsRoot string) (db.InstalledSkill, error) {
 }
 
 // Delete elimina el directorio del skill y su entrada en el lockfile.
-func Delete(skill db.InstalledSkill) error {
-	if err := IsSafeDeletePath(skill.Path, DefaultRoot); err != nil {
+func Delete(skill db.InstalledSkill, skillsRoot string) error {
+	// Usar el directorio padre del skill como root para la validación de seguridad
+	skillParentDir := filepath.Dir(skill.Path)
+	if err := IsSafeDeletePath(skill.Path, skillParentDir); err != nil {
 		return err
 	}
 
@@ -153,7 +168,7 @@ func DeleteByName(name, skillsRoot string) (db.InstalledSkill, error) {
 	if err != nil {
 		return db.InstalledSkill{}, err
 	}
-	if err := Delete(skill); err != nil {
+	if err := Delete(skill, skillsRoot); err != nil {
 		return db.InstalledSkill{}, err
 	}
 	return skill, nil

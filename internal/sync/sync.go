@@ -19,12 +19,12 @@ var (
 	infoStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
 	dimStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666"))
 
-	getRemoteHashFn    = gitrepo.GetRemoteHash
-	cloneAndScanFn     = gitrepo.CloneAndScan
-	saveInstalledFn    = db.SaveInstalledSkill
-	removeAllFn        = os.RemoveAll
-	statFn             = os.Stat
-	copyDirFn          = copyDir
+	getRemoteHashFn = gitrepo.GetRemoteHash
+	cloneAndScanFn  = gitrepo.CloneAndScan
+	saveInstalledFn = db.SaveInstalledSkill
+	removeAllFn     = os.RemoveAll
+	statFn          = os.Stat
+	copyDirFn       = copyDir
 )
 
 // SyncResult contiene el resultado de la sincronización
@@ -179,9 +179,22 @@ func syncRepo(repoURL string, skills []db.InstalledSkill) []SyncResult {
 			continue
 		}
 
-		// Si el hash no ha cambiado Y el archivo existe, saltar
-		if installed.CommitHash == scanRes.CommitHash {
+		// Si el hash del árbol no ha cambiado (o el commit entero) Y la carpeta existe localmente, saltar
+		hashUnchanged := false
+		if installed.TreeHash != "" && remote.TreeHash != "" {
+			hashUnchanged = (installed.TreeHash == remote.TreeHash)
+		} else {
+			hashUnchanged = (installed.CommitHash == scanRes.CommitHash)
+		}
+
+		if hashUnchanged {
 			if _, err := statFn(installed.Path); err == nil {
+				// Actualizar el CommitHash para que no vuelva a descargar la próxima vez si no hay cambios nuevos
+				if installed.CommitHash != scanRes.CommitHash {
+					installed.CommitHash = scanRes.CommitHash
+					saveInstalledFn(installed)
+				}
+
 				results = append(results, SyncResult{
 					SkillName: installed.Name,
 					Skipped:   true,

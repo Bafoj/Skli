@@ -72,6 +72,7 @@ type SkillInfo struct {
 	Name        string
 	Description string
 	Path        string // Ruta relativa dentro del repo (para copiar)
+	TreeHash    string // Hash del árbol de git para esta carpeta
 }
 
 // ScanResult contiene el resultado del escaneo de un repositorio
@@ -185,6 +186,18 @@ func getCommitHash(repoDir string) (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
+// getTreeHash obtiene el hash del árbol de una carpeta específica en el repo
+func getTreeHash(repoDir, folderPath string) (string, error) {
+	// git rev-parse HEAD:folderPath
+	cmd := exec.Command("git", "rev-parse", "HEAD:"+folderPath)
+	cmd.Dir = repoDir
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
 // GetRemoteHash obtiene el hash del HEAD remoto sin clonar el repo
 // Esto permite verificar si hay cambios antes de descargar nada
 func GetRemoteHash(repoURL string) (string, error) {
@@ -231,6 +244,12 @@ func parseSkillFile(filePath, baseDir string) (SkillInfo, error) {
 	skillDir := filepath.Dir(filePath)
 	relPath, _ := filepath.Rel(baseDir, skillDir)
 	skill.Path = relPath
+
+	// Extraer el hash del arbol
+	treeHash, err := getTreeHash(baseDir, relPath)
+	if err == nil {
+		skill.TreeHash = treeHash
+	}
 
 	meta, err := skillmeta.ParseFile(filePath, 20)
 	if err != nil {

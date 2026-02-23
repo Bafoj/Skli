@@ -39,6 +39,7 @@ func DownloadSkillsCmd(tempDir, remoteURL, skillsPath, localPath, commitHash str
 				RemoteRoot:  skillsPath,
 				RemotePath:  skill.Path,
 				CommitHash:  commitHash,
+				TreeHash:    skill.TreeHash,
 			}
 			db.SaveInstalledSkill(instSkill)
 		}
@@ -49,10 +50,14 @@ func DownloadSkillsCmd(tempDir, remoteURL, skillsPath, localPath, commitHash str
 }
 
 // SaveConfigCmd guarda la configuración
-func SaveConfigCmd(localPath string, remotes []string) tea.Cmd {
+func SaveConfigCmd(localPath string, remotes []string, navigateBack bool) tea.Cmd {
 	return func() tea.Msg {
 		_ = config.SaveConfig(config.Config{LocalPath: localPath, Remotes: remotes})
-		return ConfigSavedMsg{}
+		return ConfigSavedMsg{
+			LocalPath:    localPath,
+			Remotes:      remotes,
+			NavigateBack: navigateBack,
+		}
 	}
 }
 

@@ -47,12 +47,13 @@ type ManageScreen struct {
 	SelectedSkill *db.InstalledSkill // Skill seleccionado para subir
 	ConfigRemotes []string           // Remotes configurados
 	TargetRemote  string
+	skillsRoot    string
 }
 
 // NewManageScreen crea una nueva pantalla de gestion
-func NewManageScreen(remotes []string, mode Mode) (ManageScreen, tea.Cmd) {
+func NewManageScreen(remotes []string, mode Mode, skillsRoot string) (ManageScreen, tea.Cmd) {
 	lock, _ := db.LoadLockFile()
-	localOnly, _ := skills.ScanLocalUnmanaged(lock.Skills, skills.DefaultRoot)
+	localOnly, _ := skills.ScanLocalUnmanaged(lock.Skills, skillsRoot)
 	managedByPath := make(map[string]bool, len(lock.Skills))
 	for _, sk := range lock.Skills {
 		managedByPath[sk.Path] = true

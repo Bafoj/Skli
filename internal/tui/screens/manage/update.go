@@ -42,7 +42,7 @@ func (s ManageScreen) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return s, nil
 		}
 		s.Msg = fmt.Sprintf("Removed %d skill(s)", len(msg.Deleted))
-		refreshed, _ := NewManageScreen(s.ConfigRemotes, s.Mode)
+		refreshed, _ := NewManageScreen(s.ConfigRemotes, s.Mode, s.skillsRoot)
 		refreshed.Msg = s.Msg
 		return refreshed, nil
 
@@ -258,7 +258,7 @@ func (s ManageScreen) updateConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.Msg = fmt.Sprintf("Error: %v", msg.Err)
 			return s, nil
 		}
-		refreshed, _ := NewManageScreen(s.ConfigRemotes, s.Mode)
+		refreshed, _ := NewManageScreen(s.ConfigRemotes, s.Mode, s.skillsRoot)
 		refreshed.Msg = fmt.Sprintf("Removed: %s", strings.Join(msg.Deleted, ", "))
 		return refreshed, nil
 	}
@@ -280,7 +280,7 @@ func (s ManageScreen) updateUploading(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		s.Msg = strings.Join(lines, "\n")
 		if s.Mode == ModeUpload {
-			refreshed, _ := NewManageScreen(s.ConfigRemotes, s.Mode)
+			refreshed, _ := NewManageScreen(s.ConfigRemotes, s.Mode, s.skillsRoot)
 			refreshed.TargetRemote = s.TargetRemote
 			refreshed.State = StateList
 			refreshed.Msg = s.Msg

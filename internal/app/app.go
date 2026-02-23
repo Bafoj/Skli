@@ -42,7 +42,7 @@ func (s Service) ConfigTUI() error {
 }
 
 func (s Service) RemoveByName(name string) (db.InstalledSkill, error) {
-	return skills.DeleteByName(name, skills.DefaultRoot)
+	return skills.DeleteByName(name, s.cfg.LocalPath)
 }
 
 type UploadResult struct {
@@ -115,7 +115,7 @@ func (s Service) ListSkills() ([]ListedSkill, error) {
 		out = append(out, ListedSkill{Skill: sk, Managed: true})
 	}
 
-	localOnly, err := skills.ScanLocalUnmanaged(lock.Skills, skills.DefaultRoot)
+	localOnly, err := skills.ScanLocalUnmanaged(lock.Skills, s.cfg.LocalPath)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (s Service) ListSkills() ([]ListedSkill, error) {
 
 func (s Service) runTUI(initialURL string, configMode bool, manageMode manage.Mode) error {
 	p := tea.NewProgram(
-		tui.NewRootModel(initialURL, skills.DefaultRoot, s.cfg.LocalPath, configMode, manageMode, s.cfg.Remotes),
+		tui.NewRootModel(initialURL, s.cfg.LocalPath, s.cfg.LocalPath, configMode, manageMode, s.cfg.Remotes),
 		tea.WithAltScreen(),
 	)
 	_, err := p.Run()

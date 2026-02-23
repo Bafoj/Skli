@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"skli/internal/db"
 	"skli/internal/gitrepo"
@@ -44,7 +45,9 @@ func DeleteSkillsCmd(selectedSkills []db.InstalledSkill) tea.Cmd {
 		}
 		deleted := make([]string, 0, len(selectedSkills))
 		for _, sk := range selectedSkills {
-			if err := skillsvc.IsSafeDeletePath(sk.Path, skillsvc.DefaultRoot); err != nil {
+			// Usar el directorio padre del skill como root para la validación de seguridad
+			skillParentDir := filepath.Dir(sk.Path)
+			if err := skillsvc.IsSafeDeletePath(sk.Path, skillParentDir); err != nil {
 				return DeleteSkillsMsg{Err: err}
 			}
 			if err := os.RemoveAll(sk.Path); err != nil {

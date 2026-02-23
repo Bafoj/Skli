@@ -89,7 +89,7 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.activeScreen.Init()
 
 	case shared.NavigateToManageMsg:
-		screen, cmd := manage.NewManageScreen(m.remotes, m.manageMode)
+		screen, cmd := manage.NewManageScreen(m.remotes, m.manageMode, m.skillsRoot)
 		m.activeScreen = screen
 		return m, cmd
 
@@ -98,7 +98,12 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Continuar con update normal
 
 	case shared.ConfigSavedMsg:
-		// Config guardado, solo continuar
+		m.configLocalPath = msg.LocalPath
+		m.remotes = msg.Remotes
+		if msg.NavigateBack {
+			m.activeScreen = config.NewConfigScreen(m.configLocalPath, m.remotes)
+			return m, m.activeScreen.Init()
+		}
 	}
 
 	// Delegar al screen activo

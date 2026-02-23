@@ -29,7 +29,7 @@ func (s ConfigScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return s, func() tea.Msg { return shared.NavigateToEditorMsg{} }
 			} else if s.Cursor == 2 {
 				return s, tea.Batch(
-					shared.SaveConfigCmd(s.ConfigLocalPath, s.Remotes),
+					shared.SaveConfigCmd(s.ConfigLocalPath, s.Remotes, false),
 					func() tea.Msg { return shared.NavigateToDoneMsg{ConfigMode: true, LocalPath: s.ConfigLocalPath} },
 				)
 			}

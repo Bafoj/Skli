@@ -1,4 +1,4 @@
-last_updated = 2026-02-11T10:57:35.316783+01:00
+last_updated = 2026-02-23T15:41:14.656953+01:00
 
 [[skills]]
   name = "skill-creator"
@@ -7,20 +7,10 @@ last_updated = 2026-02-11T10:57:35.316783+01:00
   remote_repo = "https://github.com/openai/skills/tree/main"
   remote_root = "skills"
   remote_path = ".system/skill-creator"
-  commit_hash = "4ab6e0fd99c6667163bc34173e3ed3a3fed75ebc"
+  commit_hash = "2c9ebb321958f64aa9414b46e4240901e2b9e1a9"
+  tree_hash = ""
   installed_at = 2026-02-09T17:16:51.359976+01:00
-  updated_at = 2026-02-11T10:52:04.843372+01:00
-
-[[skills]]
-  name = "linear"
-  description = "Manage issues, projects & team workflows in Linear. Use when the user wants to read, create or updates tickets in Linear."
-  path = ".antigravity/skills/linear"
-  remote_repo = "https://github.com/openai/skills/tree/main/skills"
-  remote_root = "skills"
-  remote_path = ".curated/linear"
-  commit_hash = "4ab6e0fd99c6667163bc34173e3ed3a3fed75ebc"
-  installed_at = 2026-02-11T10:57:35.311012+01:00
-  updated_at = 2026-02-11T10:57:35.311012+01:00
+  updated_at = 2026-02-23T12:52:58.845339+01:00
 
 [[skills]]
   name = "netlify-deploy"
@@ -29,9 +19,10 @@ last_updated = 2026-02-11T10:57:35.316783+01:00
   remote_repo = "https://github.com/openai/skills/tree/main/skills"
   remote_root = "skills"
   remote_path = ".curated/netlify-deploy"
-  commit_hash = "4ab6e0fd99c6667163bc34173e3ed3a3fed75ebc"
+  commit_hash = "2c9ebb321958f64aa9414b46e4240901e2b9e1a9"
+  tree_hash = ""
   installed_at = 2026-02-11T10:57:35.313905+01:00
-  updated_at = 2026-02-11T10:57:35.313905+01:00
+  updated_at = 2026-02-23T12:52:58.48613+01:00
 
 [[skills]]
   name = "notion-knowledge-capture"
@@ -40,6 +31,19 @@ last_updated = 2026-02-11T10:57:35.316783+01:00
   remote_repo = "https://github.com/openai/skills/tree/main/skills"
   remote_root = "skills"
   remote_path = ".curated/notion-knowledge-capture"
-  commit_hash = "4ab6e0fd99c6667163bc34173e3ed3a3fed75ebc"
+  commit_hash = "2c9ebb321958f64aa9414b46e4240901e2b9e1a9"
+  tree_hash = ""
   installed_at = 2026-02-11T10:57:35.31678+01:00
-  updated_at = 2026-02-11T10:57:35.31678+01:00
+  updated_at = 2026-02-23T12:52:58.549113+01:00
+
+[[skills]]
+  name = "golang-pro"
+  description = "Use when building Go applications requiring concurrent programming, microservices architecture, or high-performance systems. Invoke for goroutines, channels, Go generics, gRPC integration."
+  path = ".vscode/skills/golang-pro"
+  remote_repo = "https://github.com/Jeffallan/claude-skills"
+  remote_root = "skills"
+  remote_path = "golang-pro"
+  commit_hash = "77037f2d384baea59d97fdd7b43d9a855babc444"
+  tree_hash = ""
+  installed_at = 2026-02-23T15:14:04.349257+01:00
+  updated_at = 2026-02-23T15:14:28.884218+01:00
