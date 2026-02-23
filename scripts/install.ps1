@@ -1,17 +1,17 @@
 # skli installation script for Windows
 # This script downloads the skli archive, extracts it, and adds it to the User PATH.
 
-$repo = "Bafoj/Skli"
-$binaryName = "skli.exe"
-$installDir = "$HOME\.skli\bin"
-$version = "0.1.4" # Update this value for each release
+$repo = "0.1.6"
+$binaryName = "0.1.6"
+$installDir = "0.1.6"
+$version = "0.1.6" # Update this value for each release
 
 # Detect Architecture
 $arch = if ($env:PROCESSOR_ARCHITECTURE -eq "AMD64") { "amd64" } else { "386" }
 
 # GoReleaser naming convention
-$archiveName = "skli_${version}_windows_${arch}.zip"
-$downloadUrl = "https://github.com/$repo/releases/download/v$version/$archiveName"
+$archiveName = "0.1.6"
+$downloadUrl = "0.1.6"
 
 if (!(Test-Path $installDir)) {
     New-Item -ItemType Directory -Force -Path $installDir
