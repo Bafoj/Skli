@@ -13,6 +13,9 @@ import (
 )
 
 var (
+	version      = "dev"
+	commit       = "none"
+	date         = "unknown"
 	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00")).Bold(true)
 	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Bold(true)
 	infoStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
@@ -118,6 +121,37 @@ func buildCLI(service app.Service) *cli.Command {
 						return cli.Exit("usage: skli config", 1)
 					}
 					return service.ConfigTUI()
+				},
+			},
+			{
+				Name:  "version",
+				Usage: "print the current version",
+				Action: func(_ context.Context, cmd *cli.Command) error {
+					if cmd.NArg() != 0 {
+						return cli.Exit("usage: skli version", 1)
+					}
+					fmt.Printf("skli version %s\n", version)
+					if commit != "none" {
+						fmt.Printf("commit: %s\n", commit)
+						fmt.Printf("date: %s\n", date)
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "update",
+				Usage: "update skli to the latest version",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					if cmd.NArg() != 0 {
+						return cli.Exit("usage: skli update", 1)
+					}
+					fmt.Println(infoStyle.Render("🔄 Updating skli..."))
+					err := service.UpdateSelf()
+					if err != nil {
+						return err
+					}
+					fmt.Println(successStyle.Render("✔ skli updated successfully"))
+					return nil
 				},
 			},
 		},

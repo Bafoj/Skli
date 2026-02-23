@@ -1,6 +1,10 @@
 package app
 
 import (
+	"os"
+	"os/exec"
+	"runtime"
+
 	tea "github.com/charmbracelet/bubbletea"
 
 	"skli/internal/config"
@@ -43,6 +47,18 @@ func (s Service) ConfigTUI() error {
 
 func (s Service) RemoveByName(name string) (db.InstalledSkill, error) {
 	return skills.DeleteByName(name, s.cfg.LocalPath)
+}
+
+func (s Service) UpdateSelf() error {
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", "Invoke-RestMethod -Uri https://raw.githubusercontent.com/Bafoj/Skli/main/scripts/install.ps1 | Invoke-Expression")
+	} else {
+		cmd = exec.Command("sh", "-c", "curl -sS https://raw.githubusercontent.com/Bafoj/Skli/main/scripts/install.sh | bash")
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 type UploadResult struct {

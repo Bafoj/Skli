@@ -2,24 +2,29 @@
 BINARY_NAME=skli
 MAIN_PATH=cmd/skli/main.go
 
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
+DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+LDFLAGS=-ldflags "-s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE)"
+
 .PHONY: all build run clean test tidy help releases goreleaser tag
 
 all: build
 
 ## build: Compila el binario
 build:
-	@echo "Compilando..."
-	@go build -o bin/$(BINARY_NAME) $(MAIN_PATH)
+	@echo "Compilando versión $(VERSION)..."
+	@go build $(LDFLAGS) -o bin/$(BINARY_NAME) $(MAIN_PATH)
 
 ## releases: Compila los binarios para todas las plataformas
 releases: clean
 	@echo "Compilando para múltiples plataformas..."
 	@mkdir -p releases
-	GOOS=darwin GOARCH=amd64 go build -o releases/$(BINARY_NAME)-darwin-amd64 $(MAIN_PATH)
-	GOOS=darwin GOARCH=arm64 go build -o releases/$(BINARY_NAME)-darwin-arm64 $(MAIN_PATH)
-	GOOS=linux GOARCH=amd64 go build -o releases/$(BINARY_NAME)-linux-amd64 $(MAIN_PATH)
-	GOOS=linux GOARCH=arm64 go build -o releases/$(BINARY_NAME)-linux-arm64 $(MAIN_PATH)
-	GOOS=windows GOARCH=amd64 go build -o releases/$(BINARY_NAME)-windows-amd64.exe $(MAIN_PATH)
+	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o releases/$(BINARY_NAME)-darwin-amd64 $(MAIN_PATH)
+	GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o releases/$(BINARY_NAME)-darwin-arm64 $(MAIN_PATH)
+	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o releases/$(BINARY_NAME)-linux-amd64 $(MAIN_PATH)
+	GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o releases/$(BINARY_NAME)-linux-arm64 $(MAIN_PATH)
+	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o releases/$(BINARY_NAME)-windows-amd64.exe $(MAIN_PATH)
 	@echo "Binarios generados en releases/"
 
 ## release: Crea una release real y la sube a GitHub (Requiere GITHUB_TOKEN)
