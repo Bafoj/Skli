@@ -3,10 +3,10 @@ package delegates
 import (
 	"fmt"
 	"io"
+	"skli/internal/tui/shared"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type EditorDelegate struct {
@@ -14,11 +14,7 @@ type EditorDelegate struct {
 }
 
 func NewEditorDelegate() EditorDelegate {
-	styles := list.NewDefaultItemStyles()
-	styles.SelectedTitle = styles.SelectedTitle.
-		Foreground(lipgloss.Color("#7D56F4")).
-		BorderForeground(lipgloss.Color("#7D56F4"))
-
+	styles := shared.NewListItemStyles()
 	return EditorDelegate{styles: styles}
 }
 
@@ -42,11 +38,11 @@ func (d EditorDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 
 	if index == m.Index() {
 		fmt.Fprintf(w, "%s\n%s",
-			d.styles.SelectedTitle.Render("➜ "+title),
+			d.styles.SelectedTitle.Render(shared.SelectorDot(true)+" "+title),
 			d.styles.SelectedDesc.Render("    "+desc))
 	} else {
 		fmt.Fprintf(w, "%s\n%s",
-			d.styles.NormalTitle.Render("  "+title),
+			d.styles.NormalTitle.Render(shared.SelectorDot(false)+" "+title),
 			d.styles.NormalDesc.Render("    "+desc))
 	}
 }

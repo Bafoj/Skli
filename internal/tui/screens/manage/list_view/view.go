@@ -5,7 +5,6 @@ import (
 	"skli/internal/tui/shared"
 
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/lipgloss"
 )
 
 func View(l list.Model, skillCount int, msg string) string {
@@ -14,7 +13,10 @@ func View(l list.Model, skillCount int, msg string) string {
 	}
 
 	if msg != "" {
-		return fmt.Sprintf("\n  %s\n\n%s", lipgloss.NewStyle().Foreground(lipgloss.Color("#FF5555")).Render(msg), l.View())
+		if len(msg) >= 5 && msg[:5] == "Error" {
+			return fmt.Sprintf("\n  %s\n\n%s", shared.ErrorPopup(msg), l.View())
+		}
+		return fmt.Sprintf("\n  %s\n\n%s", shared.InfoStyle.Render(msg), l.View())
 	}
 
 	originalTitle := l.Title

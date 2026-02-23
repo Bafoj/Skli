@@ -88,6 +88,9 @@ func NewManageScreen(remotes []string, mode Mode, skillsRoot string) (ManageScre
 	l.Title = listTitleForMode(mode)
 	l.SetShowStatusBar(true)
 	l.SetStatusBarItemName("skill", "skills")
+	l.SetFilteringEnabled(true)
+	l.SetShowFilter(true)
+	l.FilterInput.Prompt = "Search: "
 	l.AdditionalShortHelpKeys = func() []key.Binding {
 		switch mode {
 		case ModeManage:
@@ -196,7 +199,9 @@ func buildUploadRemoteList(remotes []string) list.Model {
 	l := list.New(items, delegate, 60, 14)
 	l.Title = "Step 1/2: Select target repository"
 	l.SetShowStatusBar(false)
-	l.SetFilteringEnabled(false)
+	l.SetFilteringEnabled(true)
+	l.SetShowFilter(true)
+	l.FilterInput.Prompt = "Search: "
 	l.Styles.Title = shared.TitleStyle
 	return l
 }

@@ -3,10 +3,10 @@ package delegates
 import (
 	"fmt"
 	"io"
+	"skli/internal/tui/shared"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type ManageDelegate struct {
@@ -15,14 +15,7 @@ type ManageDelegate struct {
 }
 
 func NewManageDelegate(showCheckbox bool) ManageDelegate {
-	styles := list.NewDefaultItemStyles()
-	styles.SelectedTitle = styles.SelectedTitle.
-		Foreground(lipgloss.Color("#FF0000")).
-		BorderForeground(lipgloss.Color("#FF0000"))
-	styles.SelectedDesc = styles.SelectedDesc.
-		Foreground(lipgloss.Color("#FF0000")).
-		BorderForeground(lipgloss.Color("#FF0000"))
-
+	styles := shared.NewListItemStyles()
 	return ManageDelegate{styles: styles, showCheckbox: showCheckbox}
 }
 
@@ -57,11 +50,11 @@ func (d ManageDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 
 	if index == m.Index() {
 		fmt.Fprintf(w, "%s\n%s",
-			d.styles.SelectedTitle.Render("➜ "+title),
+			d.styles.SelectedTitle.Render(shared.SelectorDot(true)+" "+title),
 			d.styles.SelectedDesc.Render("    "+desc))
 	} else {
 		fmt.Fprintf(w, "%s\n%s",
-			d.styles.NormalTitle.Render("  "+title),
+			d.styles.NormalTitle.Render(shared.SelectorDot(false)+" "+title),
 			d.styles.NormalDesc.Render("    "+desc))
 	}
 }
@@ -71,11 +64,7 @@ type RemoteDelegate struct {
 }
 
 func NewRemoteDelegate() RemoteDelegate {
-	styles := list.NewDefaultItemStyles()
-	styles.SelectedTitle = styles.SelectedTitle.
-		Foreground(lipgloss.Color("#7D56F4")).
-		BorderForeground(lipgloss.Color("#7D56F4"))
-
+	styles := shared.NewListItemStyles()
 	return RemoteDelegate{styles: styles}
 }
 
@@ -92,8 +81,8 @@ func (d RemoteDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 	}
 	title := titled.Title()
 	if index == m.Index() {
-		fmt.Fprint(w, d.styles.SelectedTitle.Render("➜ "+title))
+		fmt.Fprint(w, d.styles.SelectedTitle.Render(shared.SelectorDot(true)+" "+title))
 	} else {
-		fmt.Fprint(w, d.styles.NormalTitle.Render("  "+title))
+		fmt.Fprint(w, d.styles.NormalTitle.Render(shared.SelectorDot(false)+" "+title))
 	}
 }

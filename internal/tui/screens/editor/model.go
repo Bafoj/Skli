@@ -55,6 +55,9 @@ func NewEditorScreen(skills []shared.Skill, tempDir, remoteURL, skillsRoot, comm
 	l.Title = "Select your editor"
 	l.SetShowStatusBar(true)
 	l.SetStatusBarItemName("editor", "editors")
+	l.SetFilteringEnabled(true)
+	l.SetShowFilter(true)
+	l.FilterInput.Prompt = "Search: "
 	l.Styles.Title = shared.TitleStyle
 
 	ti := textinput.New()
@@ -105,6 +108,9 @@ func NewEditorScreenForConfig(currentPath string, remotes []string) EditorScreen
 	l.Title = "Configure your editor"
 	l.Select(cursor)
 	l.SetShowStatusBar(true)
+	l.SetFilteringEnabled(true)
+	l.SetShowFilter(true)
+	l.FilterInput.Prompt = "Search: "
 	l.Styles.Title = shared.TitleStyle
 
 	ti := textinput.New()

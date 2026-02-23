@@ -12,9 +12,9 @@ func (s ConfigScreen) View() string {
 	b.WriteString("Global Configuration:\n\n")
 
 	// Opción 0: Remotes
-	cursor := "  "
+	cursor := shared.SelectorDot(false) + " "
 	if s.Cursor == 0 {
-		cursor = "➜ "
+		cursor = shared.SelectorDot(true) + " "
 	}
 	line := "Manage Remotes"
 	if s.Cursor == 0 {
@@ -24,9 +24,9 @@ func (s ConfigScreen) View() string {
 	}
 
 	// Opción 1: Local Path
-	cursor = "  "
+	cursor = shared.SelectorDot(false) + " "
 	if s.Cursor == 1 {
-		cursor = "➜ "
+		cursor = shared.SelectorDot(true) + " "
 	}
 	line = "Local Path: " + shared.InfoStyle.Render(s.ConfigLocalPath)
 	if s.Cursor == 1 {
@@ -36,9 +36,9 @@ func (s ConfigScreen) View() string {
 	}
 
 	// Opción 2: Confirmar
-	cursor = "  "
+	cursor = shared.SelectorDot(false) + " "
 	if s.Cursor == 2 {
-		cursor = "➜ "
+		cursor = shared.SelectorDot(true) + " "
 	}
 	line = "Confirm and Save"
 	if s.Cursor == 2 {
@@ -47,7 +47,7 @@ func (s ConfigScreen) View() string {
 		b.WriteString(shared.ItemStyle.Render(cursor+line) + "\n")
 	}
 
-	b.WriteString(shared.HelpStyle.Render("\n↑/↓: navigate • enter: select • q: quit"))
+	b.WriteString(shared.HelpStyle.Render("\n↑/↓ navigate • enter select • q quit"))
 
 	return b.String()
 }

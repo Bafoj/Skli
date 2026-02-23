@@ -46,6 +46,9 @@ func NewSkillsScreen(infos []gitrepo.SkillInfo, tempDir, remoteURL, skillsRoot, 
 	l.Title = "Select skills to install"
 	l.SetShowStatusBar(true)
 	l.SetStatusBarItemName("skill", "skills")
+	l.SetFilteringEnabled(true)
+	l.SetShowFilter(true)
+	l.FilterInput.Prompt = "Search: "
 	l.Styles.Title = shared.TitleStyle
 
 	return SkillsScreen{

@@ -130,7 +130,9 @@ func (s ManageScreen) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 					l := list.New(items, delegate, 60, 14)
 					l.Title = "Select target repository"
 					l.SetShowStatusBar(false)
-					l.SetFilteringEnabled(false)
+					l.SetFilteringEnabled(true)
+					l.SetShowFilter(true)
+					l.FilterInput.Prompt = "Search: "
 					l.Styles.Title = shared.TitleStyle
 					s.RemoteList = l
 

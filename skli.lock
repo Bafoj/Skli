@@ -1,4 +1,4 @@
-last_updated = 2026-02-23T15:41:14.656953+01:00
+last_updated = 2026-02-23T16:29:30.906034+01:00
 
 [[skills]]
   name = "skill-creator"
@@ -47,3 +47,15 @@ last_updated = 2026-02-23T15:41:14.656953+01:00
   tree_hash = ""
   installed_at = 2026-02-23T15:14:04.349257+01:00
   updated_at = 2026-02-23T15:14:28.884218+01:00
+
+[[skills]]
+  name = "code-reviewer"
+  description = "Use when reviewing pull requests, conducting code quality audits, or identifying security vulnerabilities. Invoke for PR reviews, code quality checks, refactoring suggestions."
+  path = ".vscode/skills/code-reviewer"
+  remote_repo = "https://github.com/Jeffallan/claude-skills"
+  remote_root = "skills"
+  remote_path = "code-reviewer"
+  commit_hash = "77037f2d384baea59d97fdd7b43d9a855babc444"
+  tree_hash = ""
+  installed_at = 2026-02-23T16:29:30.906033+01:00
+  updated_at = 2026-02-23T16:29:30.906033+01:00

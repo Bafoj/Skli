@@ -3,10 +3,10 @@ package delegates
 import (
 	"fmt"
 	"io"
+	"skli/internal/tui/shared"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type RemoteDelegate struct {
@@ -14,11 +14,7 @@ type RemoteDelegate struct {
 }
 
 func NewRemoteDelegate() RemoteDelegate {
-	styles := list.NewDefaultItemStyles()
-	styles.SelectedTitle = styles.SelectedTitle.
-		Foreground(lipgloss.Color("#7D56F4")).
-		BorderForeground(lipgloss.Color("#7D56F4"))
-
+	styles := shared.NewListItemStyles()
 	return RemoteDelegate{styles: styles}
 }
 
@@ -35,8 +31,8 @@ func (d RemoteDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 	}
 	title := i.Title()
 	if index == m.Index() {
-		fmt.Fprint(w, d.styles.SelectedTitle.Render("➜ "+title))
+		fmt.Fprint(w, d.styles.SelectedTitle.Render(shared.SelectorDot(true)+" "+title))
 	} else {
-		fmt.Fprint(w, d.styles.NormalTitle.Render("  "+title))
+		fmt.Fprint(w, d.styles.NormalTitle.Render(shared.SelectorDot(false)+" "+title))
 	}
 }

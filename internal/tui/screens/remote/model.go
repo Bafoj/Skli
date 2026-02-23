@@ -51,6 +51,9 @@ func NewRemoteScreen(remotes []string, configLocalPath string, fromConfig bool) 
 	l.Title = "Select a remote repository"
 	l.SetShowStatusBar(true)
 	l.SetStatusBarItemName("remote", "remotes")
+	l.SetFilteringEnabled(true)
+	l.SetShowFilter(true)
+	l.FilterInput.Prompt = "Search: "
 	l.SetShowHelp(true)
 	l.Styles.Title = shared.TitleStyle
 
@@ -77,6 +80,9 @@ func NewRemoteManageScreen(remotes []string, configLocalPath string) RemoteScree
 	l.Title = "Manage Remotes"
 	l.SetShowStatusBar(true)
 	l.SetStatusBarItemName("remote", "remotes")
+	l.SetFilteringEnabled(true)
+	l.SetShowFilter(true)
+	l.FilterInput.Prompt = "Search: "
 	l.SetShowHelp(true)
 	l.Styles.Title = shared.TitleStyle
 

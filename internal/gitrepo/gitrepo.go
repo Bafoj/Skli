@@ -21,6 +21,88 @@ type RepoInfo struct {
 	SubPath string // Directorio interno (ej: skills/.experimental)
 }
 
+func fullCloneAndScan(remoteURL, branch, requestedSkillsPath string) (ScanResult, error) {
+	tempDir, err := os.MkdirTemp("", "skli-repo-full-*")
+	if err != nil {
+		return ScanResult{}, fmt.Errorf("error creating full clone temp dir: %w", err)
+	}
+
+	cloneArgs := []string{"clone", "--depth", "1"}
+	if branch != "" && branch != "HEAD" {
+		cloneArgs = append(cloneArgs, "--branch", branch)
+	}
+	cloneArgs = append(cloneArgs, remoteURL, ".")
+
+	if err := runGit(tempDir, cloneArgs...); err != nil {
+		os.RemoveAll(tempDir)
+		return ScanResult{}, err
+	}
+
+	commitHash, err := getCommitHash(tempDir)
+	if err != nil {
+		os.RemoveAll(tempDir)
+		return ScanResult{}, err
+	}
+
+	skills, skillsPath, err := findSkillsInNestedSkillsDir(tempDir)
+	if err != nil {
+		os.RemoveAll(tempDir)
+		return ScanResult{}, err
+	}
+	if len(skills) == 0 {
+		os.RemoveAll(tempDir)
+		return ScanResult{}, fmt.Errorf("no skills found (SKILL.md files) in '%s' or nested 'skills' folders", requestedSkillsPath)
+	}
+
+	return ScanResult{
+		Skills:     skills,
+		TempDir:    tempDir,
+		CommitHash: commitHash,
+		SkillsPath: skillsPath,
+	}, nil
+}
+
+// findSkillsInNestedSkillsDir busca recursivamente carpetas llamadas "skills"
+// y devuelve los skills de la primera carpeta válida encontrada.
+func findSkillsInNestedSkillsDir(repoRoot string) ([]SkillInfo, string, error) {
+	var found []SkillInfo
+	var foundBase string
+
+	err := filepath.Walk(repoRoot, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+		if !info.IsDir() {
+			return nil
+		}
+		if info.Name() == ".git" {
+			return filepath.SkipDir
+		}
+		if strings.EqualFold(info.Name(), "skills") {
+			skills, scanErr := findSkills(path)
+			if scanErr != nil {
+				return scanErr
+			}
+			if len(skills) > 0 {
+				rel, relErr := filepath.Rel(repoRoot, path)
+				if relErr != nil {
+					return relErr
+				}
+				found = skills
+				foundBase = rel
+				return filepath.SkipAll
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, "", err
+	}
+
+	return found, foundBase, nil
+}
+
 // ParseGitURL analiza una URL de repositorio y extrae el repo base, rama y path interno
 // Soporta GitHub (/tree/), Bitbucket (/src/) y URLs estándar (HTTPS, SSH)
 func ParseGitURL(urlStr string) RepoInfo {
@@ -163,8 +245,22 @@ func CloneAndScan(remoteURL, skillsPath string) (ScanResult, error) {
 	}
 
 	if len(skills) == 0 {
-		os.RemoveAll(tempDir)
-		return ScanResult{}, fmt.Errorf("no skills found (SKILL.md files) in '%s'", skillsPath)
+		nestedSkills, nestedPath, nestedErr := findSkillsInNestedSkillsDir(tempDir)
+		if nestedErr != nil {
+			os.RemoveAll(tempDir)
+			return ScanResult{}, nestedErr
+		}
+		if len(nestedSkills) > 0 {
+			skills = nestedSkills
+			skillsPath = nestedPath
+		} else {
+			fullResult, fullErr := fullCloneAndScan(repoInfo.BaseURL, repoInfo.Branch, skillsPath)
+			os.RemoveAll(tempDir)
+			if fullErr != nil {
+				return ScanResult{}, fmt.Errorf("no skills found (SKILL.md files) in '%s' or nested 'skills' folders", skillsPath)
+			}
+			return fullResult, nil
+		}
 	}
 
 	return ScanResult{
