@@ -30,25 +30,39 @@ release:
 snapshot:
 	@goreleaser release --snapshot --clean
 
-## tag: Crea un tag de git, sincroniza versiones en scripts y lo sube (Uso: make tag version=0.1.0)
+## tag: Crea un tag de git, sincroniza versiones en scripts y lo sube (Uso: make tag version=0.1.0 o make tag type=patch|minor|major)
 tag:
-	@if [ -z "$(version)" ]; then \
-		echo "Error: Debes indicar la versión (sin 'v'). Ejemplo: make tag version=0.1.0"; \
+	@if [ -n "$(type)" ]; then \
+		LATEST=$$(git tag --sort=-v:refname 2>/dev/null | head -n 1); \
+		if [ -z "$$LATEST" ]; then LATEST="v0.0.0"; fi; \
+		LATEST=$${LATEST#v}; \
+		MAJOR=$$(echo $$LATEST | cut -d. -f1); \
+		MINOR=$$(echo $$LATEST | cut -d. -f2); \
+		PATCH=$$(echo $$LATEST | cut -d. -f3); \
+		if [ "$(type)" = "major" ]; then MAJOR=$$((MAJOR + 1)); MINOR=0; PATCH=0; \
+		elif [ "$(type)" = "minor" ]; then MINOR=$$((MINOR + 1)); PATCH=0; \
+		elif [ "$(type)" = "patch" ]; then PATCH=$$((PATCH + 1)); \
+		else echo "Error: tipo no válido. Usa type=major|minor|patch"; exit 1; fi; \
+		VERSION="$$MAJOR.$$MINOR.$$PATCH"; \
+	elif [ -n "$(version)" ]; then \
+		VERSION="$(version)"; \
+	else \
+		echo "Error: Debes indicar la versión o el tipo. Ejemplo: make tag version=0.1.0 o make tag type=patch"; \
 		exit 1; \
-	fi
-	@if git rev-parse v$(version) >/dev/null 2>&1 || git ls-remote --tags origin v$(version) 2>/dev/null | grep -q v$(version); then \
-		echo "Error: El tag v$(version) ya existe local o remotamente. Por favor, usa una versión superior."; \
+	fi; \
+	if git rev-parse v$$VERSION >/dev/null 2>&1 || git ls-remote --tags origin v$$VERSION 2>/dev/null | grep -q v$$VERSION; then \
+		echo "Error: El tag v$$VERSION ya existe local o remotamente. Por favor, usa una versión superior."; \
 		exit 1; \
-	fi
-	@echo "Sincronizando versiones en scripts..."
-	@sed -i '' 's/VERSION=".*"/VERSION="$(version)"/' scripts/install.sh
-	@sed -i '' 's/$$version = ".*"/$$version = "$(version)"/' scripts/install.ps1
-	@git add scripts/install.sh scripts/install.ps1
-	@git commit -m "chore: update version to v$(version) in installation scripts" || echo "No hay cambios en los scripts para commitear"
-	@git push origin main
-	@git tag -a v$(version) -m "Release v$(version)"
-	@git push origin v$(version)
-	@echo "Tag v$(version) creado y subido tras sincronizar scripts."
+	fi; \
+	echo "Sincronizando versiones en scripts a la versión $$VERSION..."; \
+	sed -i '' "s/VERSION=\".*\"/VERSION=\"$$VERSION\"/" scripts/install.sh; \
+	sed -i '' "s/\\$$version = \".*\"/\\$$version = \"$$VERSION\"/" scripts/install.ps1; \
+	git add scripts/install.sh scripts/install.ps1; \
+	git commit -m "chore: update version to v$$VERSION in installation scripts" || echo "No hay cambios en los scripts para commitear"; \
+	git push origin main; \
+	git tag -a v$$VERSION -m "Release v$$VERSION"; \
+	git push origin v$$VERSION; \
+	echo "Tag v$$VERSION creado y subido tras sincronizar scripts."
 
 ## run: Ejecuta la aplicación directamente
 run:
